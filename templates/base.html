@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CSC SAT 2026{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --navy:        #1A237E;
+      --navy-dark:   #0D1257;
+      --navy-light:  #E8EAF6;
+      --yellow:      #FFD700;
+      --yellow-dark: #C9A800;
+      --yellow-light:#FFFDE7;
+    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f5fa; }
+
+    /* ── Navbar ── */
+    .navbar { background: var(--navy-dark) !important; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+    .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .navbar-brand img { height: 38px; width: auto; }
+    .navbar-brand span { color: var(--yellow); font-weight: 800; font-size: 1rem; letter-spacing: .02em; }
+    .nav-link { color: rgba(255,255,255,.85) !important; font-weight: 500; }
+    .nav-link:hover, .nav-link.active { color: var(--yellow) !important; }
+
+    /* ── Buttons ── */
+    .btn-csc  { background: var(--navy); color: #fff; border: none; }
+    .btn-csc:hover  { background: var(--navy-dark); color: #fff; }
+    .btn-gold { background: var(--yellow); color: var(--navy-dark); border: none; font-weight: 700; }
+    .btn-gold:hover { background: var(--yellow-dark); color: var(--navy-dark); }
+
+    /* ── Forms ── */
+    .form-control:focus, .form-select:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 .2rem rgba(26,35,126,.2);
+    }
+    .input-group-text.ig-navy { background: var(--navy-light); border-color: #c5cae9; color: var(--navy); }
+
+    /* ── Flash ── */
+    .flash-container { position: fixed; top: 70px; right: 20px; z-index: 9999; min-width: 320px; }
+
+    /* ── Footer ── */
+    footer { background: var(--navy-dark); color: rgba(255,255,255,.7); padding: 1.5rem 0; margin-top: 3rem; font-size: .85rem; }
+    footer a { color: var(--yellow); text-decoration: none; }
+    footer a:hover { color: #fff; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <img src="/static/images/csc_logo.png" alt="CSC Logo">
+      <span>SAT 2026</span>
+    </a>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-auto gap-1">
+        <li class="nav-item"><a class="nav-link px-3" href="/"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="nav-item"><a class="nav-link px-3" href="/register"><i class="fas fa-user-plus me-1"></i>Register</a></li>
+        <li class="nav-item"><a class="nav-link px-3" href="/check"><i class="fas fa-id-card me-1"></i>Admit Card</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+      {{ message|safe }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+{% block content %}{% endblock %}
+
+<footer>
+  <div class="container text-center">
+    <p class="mb-1">
+      <strong style="color:var(--yellow);">Computer Software College</strong>
+      &nbsp;—&nbsp; ISO 9001:2015 Certified Institution
+    </p>
+    <p class="mb-0">Pioneering 40 Years of Value Oriented Computer Education &nbsp;|&nbsp;
+      <a href="/admin/login">Admin Portal</a>
+    </p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
