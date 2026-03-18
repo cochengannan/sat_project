@@ -120,22 +120,10 @@ def admin_required(f):
 
 # ─── ADMIT CARD PDF GENERATOR ────────────────────────────────
 def build_admit_pdf(s):
-    """
-    Generates a pixel-perfect CSC SAT 2026 admit card as a PDF in memory.
-    Matches the original printed design:
-      - Landscape A5
-      - Left panel: red bg, SAT2026 badge, 75% scholarship box,
-        Tamil text, CSC circle logo
-      - Decorative gold+green diamond border strips both sides
-      - Right panel: cream bg, ADMIT CARD title, 6-box admit no,
-        Sex checkboxes, Time field, Name underline,
-        Centre Address, desk-calendar widget, Examiner
-    """
     buf = io.BytesIO()
-    W, H = landscape(A5)          # 595.3 × 419.5 pt
+    W, H = landscape(A5)
     c    = pdfcanvas.Canvas(buf, pagesize=(W, H))
 
-    # Colours (sampled from reference image)
     RED        = colors.HexColor('#FF0000')
     CREAM      = colors.HexColor('#FCFDCD')
     NAVY       = colors.HexColor('#0000FF')
@@ -145,14 +133,14 @@ def build_admit_pdf(s):
     GOLD       = colors.HexColor('#C8A050')
     GREEN_BORD = colors.HexColor('#A8D898')
 
-    LP = 58 * mm    # left panel width
-    BR = 13 * mm    # decorative border strip width (each side)
+    LP = 58 * mm
+    BR = 13 * mm
 
-    # ── Cream background ──────────────────────────────────────
+    # Cream background
     c.setFillColor(CREAM)
     c.rect(0, 0, W, H, fill=1, stroke=0)
 
-    # ── Decorative border strips ──────────────────────────────
+    # Decorative border strips
     def draw_border(x, sw, h):
         c.setFillColor(GOLD);      c.rect(x, 0, sw, h, fill=1, stroke=0)
         c.setFillColor(CREAM);     c.rect(x+2, 2, sw-4, h-4, fill=1, stroke=0)
@@ -172,10 +160,10 @@ def build_admit_pdf(s):
     draw_border(0, BR, H)
     draw_border(W - BR, BR, H)
 
-    # ── Left red panel ────────────────────────────────────────
+    # Left red panel
     c.setFillColor(RED)
     c.rect(BR, 0, LP - BR, H, fill=1, stroke=0)
-    mid = BR + (LP - BR) / 2     # horizontal centre of left panel
+    mid = BR + (LP - BR) / 2
 
     # SAT 2026 badge
     bx = BR+6; by = H-52; bw = LP-BR-12; bh = 40
@@ -213,30 +201,43 @@ def build_admit_pdf(s):
     c.drawCentredString(mid, cy0-19, 'COMPUTER SOFTWARE COLLEGE')
     c.drawCentredString(mid, cy0-25, 'An ISO 9001 : 2015 Certified Institution')
 
-    # ── Right cream panel ─────────────────────────────────────
-    rx  = LP + 10                       # left margin of right content
-    rc  = LP + (W - BR - LP) / 2       # horizontal centre of right panel
+    # Right cream panel
+    rx  = LP + 10
+    rc  = LP + (W - BR - LP) / 2
 
     # "ADMIT CARD" title
     c.setFillColor(RED); c.setFont('Helvetica-Bold', 38)
     c.drawCentredString(rc, H-40, 'ADMIT CARD')
 
-    # Admit Card No label + 7 boxes (e.g. pmld001 = 7 chars)
+    # ── FIX: Admit Card No — 7 boxes fitted properly ──────────
+    admit_no = str(s.get('admit_card_no', ''))
+    num_boxes = max(7, len(admit_no))   # always at least 7 boxes
+
     c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
     c.drawString(rx, H-102, 'Admit Card No:')
-    bx0  = rx+80; bry = H-125; bw2 = 28; bh2 = 30; bgap = 3
-    admit_no = str(s.get('admit_card_no', ''))
-    for i in range(7):
-        xi = bx0 + i*(bw2+bgap)
+
+    # Calculate box sizes to fit all characters in available width
+    # Available width from label end to right border: W - BR - (rx+80) - 10
+    available_w = W - BR - (rx + 78) - 10
+    bw2  = min(28, int((available_w - (num_boxes - 1) * 3) / num_boxes))
+    bgap = 3
+    bh2  = 30
+    bry  = H - 125
+
+    # Start x: right after the label
+    bx0 = rx + 78
+
+    for i in range(num_boxes):
+        xi = bx0 + i * (bw2 + bgap)
         c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
         c.rect(xi, bry, bw2, bh2, fill=1, stroke=1)
         if i < len(admit_no):
             c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-            c.drawCentredString(xi+bw2/2, bry+9, admit_no[i].upper())
+            c.drawCentredString(xi + bw2 / 2, bry + 9, admit_no[i].upper())
 
     # Sex + Time row
     sy = H-177
-    ms = 15    # checkbox size
+    ms = 15
     c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
     c.drawString(rx, sy, 'Sex:')
     mx = rx+32; my = sy-11
@@ -288,7 +289,7 @@ def build_admit_pdf(s):
 
     clx = LP+12; cly = H-344; clw = 68; clh = 90
     c.setFillColor(colors.HexColor('#999999'))
-    c.roundRect(clx+3, cly-3, clw, clh, 4, fill=1, stroke=0)   # shadow
+    c.roundRect(clx+3, cly-3, clw, clh, 4, fill=1, stroke=0)
     c.setFillColor(DARK_NAVY)
     c.roundRect(clx, cly, clw, clh, 4, fill=1, stroke=0)
     th = 22
@@ -306,7 +307,7 @@ def build_admit_pdf(s):
     c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 7)
     c.drawCentredString(clx+clw/2, cly+6, cal_day_name)
 
-    # "Examiner" bottom-right
+    # Examiner
     c.setFillColor(RED); c.setFont('Helvetica-Bold', 11)
     c.drawString(W-BR-58, H-386, 'Examiner')
 
@@ -334,7 +335,6 @@ def register():
         date   = request.form.get('exam_date',   '')
         time   = request.form.get('exam_time',   '')
 
-        # Validate
         errors = []
         if not name:
             errors.append('Name is required.')
