@@ -221,12 +221,12 @@ def build_admit_pdf(s):
     c.setFillColor(RED); c.setFont('Helvetica-Bold', 38)
     c.drawCentredString(rc, H-40, 'ADMIT CARD')
 
-    # Admit Card No label + 6 boxes
+    # Admit Card No label + 7 boxes (e.g. pmld001 = 7 chars)
     c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
     c.drawString(rx, H-102, 'Admit Card No:')
-    bx0  = rx+80; bry = H-125; bw2 = 32; bh2 = 30; bgap = 4
+    bx0  = rx+80; bry = H-125; bw2 = 28; bh2 = 30; bgap = 3
     admit_no = str(s.get('admit_card_no', ''))
-    for i in range(6):
+    for i in range(7):
         xi = bx0 + i*(bw2+bgap)
         c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
         c.rect(xi, bry, bw2, bh2, fill=1, stroke=1)
