@@ -19,11 +19,11 @@ app.secret_key = 'sat2026_csc_secret_xK9mP3nQ'
 
 # ─── DATABASE CONFIG ─────────────────────────────────────────
 DB_CONFIG = {
-    'host'="sql12.freesqldatabase.com",
-    'user'="sql12820649",
-    'password'="czHpLQsvFR",
-    'database'="sql12820649",
-    'port'=3306,
+    'host':"sql12.freesqldatabase.com",
+    'user':"sql12820649",
+    'password':"czHpLQsvFR",
+    'database':"sql12820649",
+    'port':3306,
 'charset':  'utf8mb4',
 }
 
