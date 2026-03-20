@@ -12,7 +12,6 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.lib.utils import ImageReader
 
-
 # Excel
 import openpyxl
 
@@ -23,15 +22,16 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "sat2026_secure_key")
 
 # ─────────────────────────────────────────────────────────────
-# DATABASE CONFIG (RAILWAY)
+# DATABASE CONFIG (RAILWAY) — 10s timeout prevents startup hang
 # ─────────────────────────────────────────────────────────────
 DB_CONFIG = {
-    'host':     os.getenv("MYSQLHOST"),
-    'user':     os.getenv("MYSQLUSER"),
-    'password': os.getenv("MYSQLPASSWORD"),
-    'database': os.getenv("MYSQLDATABASE"),
-    'port':     int(os.getenv("MYSQLPORT", 3306)),
-    'charset':  'utf8mb4',
+    'host':               os.getenv("MYSQLHOST"),
+    'user':               os.getenv("MYSQLUSER"),
+    'password':           os.getenv("MYSQLPASSWORD"),
+    'database':           os.getenv("MYSQLDATABASE"),
+    'port':               int(os.getenv("MYSQLPORT", 3306)),
+    'charset':            'utf8mb4',
+    'connection_timeout': 10,
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -97,19 +97,21 @@ def init_db():
 
 
 # ─────────────────────────────────────────────────────────────
-# AUTO CREATE TABLE ON STARTUP
+# AUTO CREATE TABLE ON STARTUP (non-blocking — won't hang app)
 # ─────────────────────────────────────────────────────────────
 with app.app_context():
     try:
         init_db()
         print("Database table ready.")
     except Exception as e:
-        print(f"DB init warning: {e}")
+        print(f"DB init warning (non-fatal): {e}")
 
 
 # ─────────────────────────────────────────────────────────────
 # ADMIT NUMBER GENERATION
-# Series: pmld901, pmld902 ... | pvmd901 ... | chrd901 ...
+# Pammal: pmld901, pmld902 ...
+# Pallavaram: pvmd901, pvmd902 ...
+# Chrompet: chrd901, chrd902 ...
 # ─────────────────────────────────────────────────────────────
 def generate_admit_no(centre):
     prefix = CENTRES.get(centre, 'sat')
@@ -138,74 +140,64 @@ def admin_required(f):
 
 
 # ─────────────────────────────────────────────────────────────
-# PDF GENERATION — overlays student data on the admit card image
-# Image size: 1772 x 827 px (landscape A5 proportions)
-# PDF canvas: landscape A5 = 595.3 x 419.5 pts
-# Scale: x_scale = 595.3/1772, y_scale = 419.5/827
+# PDF GENERATION
+# Overlays student data on the official admit card image
+# Image: 1772 x 827 px | PDF canvas: landscape A5 = 595.3 x 419.5 pts
 # ─────────────────────────────────────────────────────────────
 def build_admit_pdf(s):
     buf = io.BytesIO()
-    W, H = landscape(A5)   # 595.3 x 419.5 pts
+    W, H = landscape(A5)  # 595.3 x 419.5 pts
 
     c = pdfcanvas.Canvas(buf, pagesize=(W, H))
 
-    # --- Draw the admit card background image ---
+    # Draw background admit card image
     img_path = os.path.join(
         os.path.dirname(__file__), 'static', 'images', 'admit_template.png'
     )
     c.drawImage(img_path, 0, 0, width=W, height=H)
 
-    # --- Scale factors (image px → PDF pts) ---
+    # Scale factors: image px → PDF pts
     sx = W / 1772
     sy = H / 827
 
-    # Helper: image coords (px from top-left) → PDF coords (pts from bottom-left)
+    # Convert image coords (px from top-left) → PDF pts (from bottom-left)
     def pos(img_x, img_y):
         return img_x * sx, H - img_y * sy
 
-    # --- Font setup ---
-    c.setFont("Helvetica-Bold", 13)
-    c.setFillColor(colors.HexColor("#00008B"))  # dark blue to match template
-
-    # ── Admit Card No (boxes start at ~790px x, ~198px y in image) ──
-    # Each box is ~82px wide, 6 boxes total
+    # ── Admit Card No — place each char in its box ──
+    # Boxes start at x=793, y=213, each box ~82px wide
     admit = s['admit_card_no']
-    box_start_x = 793
-    box_y = 213
-    box_width = 82
     c.setFont("Helvetica-Bold", 14)
+    c.setFillColor(colors.HexColor("#00008B"))
     for i, ch in enumerate(admit):
-        cx = box_start_x + i * box_width + 30
-        x, y = pos(cx, box_y)
+        x, y = pos(793 + i * 82 + 30, 213)
         c.drawCentredString(x, y, ch)
 
-    # ── Gender checkbox (M box ~660px, F box ~730px, y ~310px) ──
+    # ── Gender checkbox ──
     c.setFont("Helvetica-Bold", 13)
-    gender = s['gender']
-    if gender == 'Male':
+    if s['gender'] == 'Male':
         x, y = pos(653, 318)
-        c.drawString(x, y, "✓")
     else:
         x, y = pos(725, 318)
-        c.drawString(x, y, "✓")
+    c.drawString(x, y, "X")
 
-    # ── Time (~940px x, ~310px y) ──
+    # ── Exam Time ──
     x, y = pos(940, 318)
     c.setFont("Helvetica-Bold", 13)
     c.drawString(x, y, s['exam_time'])
 
-    # ── Name (~760px x, ~415px y) ──
+    # ── Name ──
     x, y = pos(760, 418)
     c.setFont("Helvetica-Bold", 13)
     c.drawString(x, y, s['name'].upper())
 
-    # ── Centre Address (~630px x, ~520px y) ──
+    # ── Centre Address ──
     address = CENTRE_ADDRESS.get(s['exam_centre'], s['exam_centre'])
     x, y = pos(630, 520)
     c.setFont("Helvetica-Bold", 11)
     c.drawString(x, y, address)
 
-    # ── Exam Date (shown below centre address) ──
+    # ── Exam Date ──
     x, y = pos(630, 548)
     c.setFont("Helvetica-Bold", 11)
     c.drawString(x, y, f"Exam Date: {s['exam_date']}")
@@ -339,7 +331,7 @@ def admin_students():
 
 
 # ─────────────────────────────────────────────────────────────
-# RUN (local dev only - Gunicorn handles production)
+# RUN (local dev only — Gunicorn handles production)
 # ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=5000)
