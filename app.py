@@ -12,6 +12,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.lib.utils import ImageReader
 
+
 # Excel
 import openpyxl
 
