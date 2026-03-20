@@ -4,49 +4,51 @@ import mysql.connector
 import os, io, re
 from datetime import datetime
 from functools import wraps
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from reportlab.lib.pagesizes import landscape, A5, A4
+
+# PDF
+from reportlab.lib.pagesizes import landscape, A5
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas as pdfcanvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.utils import ImageReader
+
+# Excel
+import openpyxl
 
 # ─────────────────────────────────────────────────────────────
-# APP
+# APP INIT
 # ─────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "sat2026_csc_secret_xK9mP3nQ")
+app.secret_key = os.getenv("SECRET_KEY", "sat2026_secure_key")
 
 # ─────────────────────────────────────────────────────────────
-# DATABASE CONFIG
-# Reads from environment variables (Render + Railway)
-# Falls back to local MySQL for development
+# DATABASE CONFIG (RAILWAY)
 # ─────────────────────────────────────────────────────────────
 DB_CONFIG = {
-    'host':     os.getenv("MYSQLHOST",     "127.0.0.1"),
-    'user':     os.getenv("MYSQLUSER",     "root"),
-    'password': os.getenv("MYSQLPASSWORD", ""),
-    'database': os.getenv("MYSQLDATABASE", "sat2026_db"),
+    'host':     os.getenv("MYSQLHOST"),
+    'user':     os.getenv("MYSQLUSER"),
+    'password': os.getenv("MYSQLPASSWORD"),
+    'database': os.getenv("MYSQLDATABASE"),
     'port':     int(os.getenv("MYSQLPORT", 3306)),
     'charset':  'utf8mb4',
 }
 
 # ─────────────────────────────────────────────────────────────
-# ADMIN CREDENTIALS
+# CONFIG
 # ─────────────────────────────────────────────────────────────
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "sat@admin2026")
 
-# ─────────────────────────────────────────────────────────────
-# EXAM CONFIG
-# ─────────────────────────────────────────────────────────────
 CENTRES = {
     'Pammal':     'pmld',
     'Pallavaram': 'pvmd',
     'Chrompet':   'chrd',
+}
+
+CENTRE_ADDRESS = {
+    'Pammal':     'CSC - Pammal Branch, Pammal, Chennai - 600 075',
+    'Pallavaram': 'CSC - Pallavaram Branch, Pallavaram, Chennai - 600 043',
+    'Chrompet':   'CSC - Chrompet Branch, Chrompet, Chennai - 600 044',
 }
 
 EXAM_DATES = [
@@ -55,9 +57,9 @@ EXAM_DATES = [
 ]
 
 TIMINGS = [
-    '7:00 AM',  '7:30 AM',
-    '8:00 AM',  '8:30 AM',
-    '9:00 AM',  '9:30 AM',
+    '7:00 AM', '7:30 AM',
+    '8:00 AM', '8:30 AM',
+    '9:00 AM', '9:30 AM',
     '10:00 AM', '10:30 AM',
     '11:00 AM', '11:30 AM',
     '12:00 PM', '12:30 PM',
@@ -65,61 +67,61 @@ TIMINGS = [
 ]
 
 # ─────────────────────────────────────────────────────────────
-# DATABASE HELPERS
+# DB HELPERS
 # ─────────────────────────────────────────────────────────────
 def get_db():
     return mysql.connector.connect(**DB_CONFIG)
 
 
 def init_db():
-    """Create table if it doesn't exist."""
     conn = get_db()
-    cur  = conn.cursor()
+    cur = conn.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS registrations (
             id            INT AUTO_INCREMENT PRIMARY KEY,
-            admit_card_no VARCHAR(20)  UNIQUE NOT NULL,
-            name          VARCHAR(100) NOT NULL,
-            gender        ENUM('Male','Female') NOT NULL,
-            mobile        VARCHAR(15)  NOT NULL,
-            exam_centre   VARCHAR(30)  NOT NULL,
-            exam_date     VARCHAR(50)  NOT NULL,
-            exam_time     VARCHAR(15)  NOT NULL,
+            admit_card_no VARCHAR(20) UNIQUE,
+            name          VARCHAR(100),
+            gender        ENUM('Male','Female'),
+            mobile        VARCHAR(15),
+            exam_centre   VARCHAR(30),
+            exam_date     VARCHAR(50),
+            exam_time     VARCHAR(15),
             registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_active     TINYINT(1) DEFAULT 1,
-            INDEX idx_mobile (mobile),
-            INDEX idx_admit  (admit_card_no),
-            INDEX idx_centre (exam_centre)
+            is_active     TINYINT(1) DEFAULT 1
         )
     """)
     conn.commit()
     cur.close()
     conn.close()
-    print("✅ Database table ready.")
-
-
-def generate_admit_no(centre):
-    """Generate hall ticket: prefix + zero-padded serial per centre."""
-    prefix = CENTRES.get(centre, 'sat')
-    conn   = get_db()
-    cur    = conn.cursor()
-    cur.execute(
-        "SELECT COUNT(*) FROM registrations WHERE exam_centre=%s", (centre,)
-    )
-    count = cur.fetchone()[0]
-    cur.close()
-    conn.close()
-    return f"{prefix}{count + 1:03d}"
 
 
 # ─────────────────────────────────────────────────────────────
-# AUTO-CREATE TABLE ON STARTUP
+# AUTO CREATE TABLE ON STARTUP
 # ─────────────────────────────────────────────────────────────
 with app.app_context():
     try:
         init_db()
+        print("Database table ready.")
     except Exception as e:
-        print(f"⚠️  DB init warning: {e}")
+        print(f"DB init warning: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+# ADMIT NUMBER GENERATION
+# Series: pmld901, pmld902 ... | pvmd901 ... | chrd901 ...
+# ─────────────────────────────────────────────────────────────
+def generate_admit_no(centre):
+    prefix = CENTRES.get(centre, 'sat')
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT COUNT(*) FROM registrations WHERE exam_centre=%s",
+        (centre,)
+    )
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return f"{prefix}{901 + count}"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -127,200 +129,85 @@ with app.app_context():
 # ─────────────────────────────────────────────────────────────
 def admin_required(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get('admin_logged_in'):
+    def wrapper(*args, **kwargs):
+        if not session.get('admin'):
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
-    return decorated
+    return wrapper
 
 
 # ─────────────────────────────────────────────────────────────
-# PDF ADMIT CARD — pixel-perfect CSC SAT 2026 design
+# PDF GENERATION — overlays student data on the admit card image
+# Image size: 1772 x 827 px (landscape A5 proportions)
+# PDF canvas: landscape A5 = 595.3 x 419.5 pts
+# Scale: x_scale = 595.3/1772, y_scale = 419.5/827
 # ─────────────────────────────────────────────────────────────
 def build_admit_pdf(s):
-    """
-    Generates the CSC SAT 2026 admit card as a PDF.
-    Landscape A5 with:
-      Left  — Red panel: SAT badge, 75% box, Tamil text, CSC logo
-      Right — Cream panel: ADMIT CARD title, 7 boxes for hall ticket,
-              Sex checkboxes, Time, Name underline, Centre, Calendar
-    """
-    buf  = io.BytesIO()
-    W, H = landscape(A5)
-    c    = pdfcanvas.Canvas(buf, pagesize=(W, H))
+    buf = io.BytesIO()
+    W, H = landscape(A5)   # 595.3 x 419.5 pts
 
-    RED        = colors.HexColor('#FF0000')
-    CREAM      = colors.HexColor('#FCFDCD')
-    NAVY       = colors.HexColor('#0000FF')
-    DARK_NAVY  = colors.HexColor('#0808A6')
-    YELLOW     = colors.HexColor('#E4FF00')
-    WHITE      = colors.white
-    GOLD       = colors.HexColor('#C8A050')
-    GREEN_BORD = colors.HexColor('#A8D898')
+    c = pdfcanvas.Canvas(buf, pagesize=(W, H))
 
-    LP = 58 * mm    # left panel width
-    BR = 13 * mm    # border strip width each side
+    # --- Draw the admit card background image ---
+    img_path = os.path.join(
+        os.path.dirname(__file__), 'static', 'images', 'admit_template.png'
+    )
+    c.drawImage(img_path, 0, 0, width=W, height=H)
 
-    # Cream background
-    c.setFillColor(CREAM)
-    c.rect(0, 0, W, H, fill=1, stroke=0)
+    # --- Scale factors (image px → PDF pts) ---
+    sx = W / 1772
+    sy = H / 827
 
-    # Decorative border strips
-    def draw_border(x, sw, h):
-        c.setFillColor(GOLD);      c.rect(x, 0, sw, h, fill=1, stroke=0)
-        c.setFillColor(CREAM);     c.rect(x+2, 2, sw-4, h-4, fill=1, stroke=0)
-        c.setFillColor(GREEN_BORD);c.rect(x+4, 4, sw-8, h-8, fill=1, stroke=0)
-        c.setFillColor(CREAM);     c.rect(x+7, 7, sw-14, h-14, fill=1, stroke=0)
-        cx = x + sw/2
-        c.setFillColor(GOLD)
-        for yp in range(10, int(h), 10):
-            p = c.beginPath()
-            p.moveTo(cx, yp+4); p.lineTo(cx+4, yp)
-            p.lineTo(cx, yp-4); p.lineTo(cx-4, yp); p.close()
-            c.drawPath(p, fill=1, stroke=0)
-        c.setFillColor(GREEN_BORD)
-        for yp in range(5, int(h), 10):
-            c.circle(cx, yp, 1.5, fill=1, stroke=0)
+    # Helper: image coords (px from top-left) → PDF coords (pts from bottom-left)
+    def pos(img_x, img_y):
+        return img_x * sx, H - img_y * sy
 
-    draw_border(0, BR, H)
-    draw_border(W - BR, BR, H)
+    # --- Font setup ---
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColor(colors.HexColor("#00008B"))  # dark blue to match template
 
-    # Left red panel
-    c.setFillColor(RED)
-    c.rect(BR, 0, LP - BR, H, fill=1, stroke=0)
-    mid = BR + (LP - BR) / 2
+    # ── Admit Card No (boxes start at ~790px x, ~198px y in image) ──
+    # Each box is ~82px wide, 6 boxes total
+    admit = s['admit_card_no']
+    box_start_x = 793
+    box_y = 213
+    box_width = 82
+    c.setFont("Helvetica-Bold", 14)
+    for i, ch in enumerate(admit):
+        cx = box_start_x + i * box_width + 30
+        x, y = pos(cx, box_y)
+        c.drawCentredString(x, y, ch)
 
-    # SAT 2026 badge
-    bx = BR+6; by = H-52; bw = LP-BR-12; bh = 40
-    c.setFillColor(DARK_NAVY); c.roundRect(bx, by, bw, bh, 10, fill=1, stroke=0)
-    c.setStrokeColor(YELLOW); c.setLineWidth(2.5)
-    c.ellipse(bx+4, by+4, bx+bw-4, by+bh-4, fill=0, stroke=1)
-    c.setFillColor(YELLOW); c.setFont('Helvetica-Bold', 14)
-    c.drawCentredString(mid, by+bh-15, 'SAT 2026')
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 5.5)
-    c.drawCentredString(mid, by+5, '33rd Scholarship Aptitude Test')
-
-    # Win up to 75% box
-    wx = BR+5; wy = H-148; ww = LP-BR-10; wh = 90
-    c.setFillColor(DARK_NAVY); c.roundRect(wx, wy, ww, wh, 8, fill=1, stroke=0)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 10)
-    c.drawCentredString(mid, wy+wh-14, 'Win up to')
-    c.setFillColor(YELLOW); c.setFont('Helvetica-Bold', 46)
-    c.drawCentredString(mid, wy+wh-60, '75%')
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 14)
-    c.drawCentredString(mid, wy+8, 'Scholarship')
-
-    # Tamil text
-    c.setFillColor(DARK_NAVY); c.setFont('Helvetica-Bold', 7)
-    c.drawCentredString(mid, H-162, 'anumadhi ilavasam !')
-    c.drawCentredString(mid, H-173, 'anaivarium varuga !!')
-
-    # CSC circle logo
-    cy0 = 34
-    c.setFillColor(DARK_NAVY); c.circle(mid, cy0, 28, fill=1, stroke=0)
-    c.setStrokeColor(YELLOW); c.setLineWidth(2.5)
-    c.circle(mid, cy0, 28, fill=0, stroke=1)
-    c.setFillColor(YELLOW); c.setFont('Helvetica-BoldOblique', 26)
-    c.drawCentredString(mid, cy0-9, 'CSC')
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 4.5)
-    c.drawCentredString(mid, cy0-19, 'COMPUTER SOFTWARE COLLEGE')
-    c.drawCentredString(mid, cy0-25, 'An ISO 9001 : 2015 Certified Institution')
-
-    # Right cream panel
-    rx = LP + 10
-    rc = LP + (W - BR - LP) / 2
-
-    # ADMIT CARD title
-    c.setFillColor(RED); c.setFont('Helvetica-Bold', 38)
-    c.drawCentredString(rc, H-40, 'ADMIT CARD')
-
-    # Admit Card No — 7 boxes (e.g. pmld001)
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, H-102, 'Admit Card No:')
-    bx0 = rx+80; bry = H-125; bw2 = 28; bh2 = 30; bgap = 3
-    admit_no = str(s.get('admit_card_no', ''))
-    for i in range(7):
-        xi = bx0 + i*(bw2+bgap)
-        c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
-        c.rect(xi, bry, bw2, bh2, fill=1, stroke=1)
-        if i < len(admit_no):
-            c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-            c.drawCentredString(xi+bw2/2, bry+9, admit_no[i].upper())
-
-    # Sex + Time row
-    sy = H-177; ms = 15
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, sy, 'Sex:')
-    mx = rx+32; my = sy-11
-    c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
-    c.rect(mx, my, ms, ms, fill=1, stroke=1)
-    if s.get('gender') == 'Male':
-        c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 10)
-        c.drawCentredString(mx+ms/2, my+3, 'X')
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(mx+ms+4, sy, 'M')
-    fx = mx+ms+22
-    c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
-    c.rect(fx, my, ms, ms, fill=1, stroke=1)
-    if s.get('gender') == 'Female':
-        c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 10)
-        c.drawCentredString(fx+ms/2, my+3, 'X')
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(fx+ms+4, sy, 'F')
-    tlx = fx+ms+30
-    c.drawString(tlx, sy, 'Time:')
-    tvx = tlx+38
-    time_val = str(s.get('exam_time', ''))
-    c.drawString(tvx, sy, time_val)
-    c.setStrokeColor(NAVY); c.setLineWidth(1.2)
-    c.line(tvx, sy-3, tvx+72, sy-3)
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(tvx+74, sy, 'am./pm.')
-
-    # Name row
-    ny = H-210
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, ny, 'Name :')
-    c.drawString(rx+50, ny, str(s.get('name', '')).upper())
-    c.setStrokeColor(NAVY); c.setLineWidth(1.2)
-    c.line(rx+48, ny-3, W-BR-14, ny-3)
-
-    # Centre Address row
-    cay = H-243
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, cay, 'Centre Address :')
-    c.drawString(rx+104, cay, str(s.get('exam_centre', '')).upper())
-
-    # Desk calendar
-    exam_date_str = str(s.get('exam_date', ''))
-    if 'April' in exam_date_str:
-        cal_month, cal_day, cal_day_name = 'APRIL', '4', 'SATURDAY'
+    # ── Gender checkbox (M box ~660px, F box ~730px, y ~310px) ──
+    c.setFont("Helvetica-Bold", 13)
+    gender = s['gender']
+    if gender == 'Male':
+        x, y = pos(653, 318)
+        c.drawString(x, y, "✓")
     else:
-        cal_month, cal_day, cal_day_name = 'MARCH', '29', 'SUNDAY'
+        x, y = pos(725, 318)
+        c.drawString(x, y, "✓")
 
-    clx = LP+12; cly = H-344; clw = 68; clh = 90
-    c.setFillColor(colors.HexColor('#999999'))
-    c.roundRect(clx+3, cly-3, clw, clh, 4, fill=1, stroke=0)
-    c.setFillColor(DARK_NAVY)
-    c.roundRect(clx, cly, clw, clh, 4, fill=1, stroke=0)
-    th = 22
-    c.setFillColor(RED)
-    c.roundRect(clx, cly+clh-th, clw, th, 4, fill=1, stroke=0)
-    c.rect(clx, cly+clh-th, clw, th/2, fill=1, stroke=0)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 7)
-    c.drawCentredString(clx+clw/2, cly+clh-10, 'EXAM DATE')
-    c.setFillColor(YELLOW); c.setFont('Helvetica-Bold', 14)
-    c.drawCentredString(clx+clw/2, cly+clh-38, cal_month)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 36)
-    c.drawCentredString(clx+clw/2, cly+clh-72, cal_day)
-    c.setFillColor(RED)
-    c.roundRect(clx+5, cly+3, clw-10, 14, 3, fill=1, stroke=0)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 7)
-    c.drawCentredString(clx+clw/2, cly+6, cal_day_name)
+    # ── Time (~940px x, ~310px y) ──
+    x, y = pos(940, 318)
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(x, y, s['exam_time'])
 
-    # Examiner
-    c.setFillColor(RED); c.setFont('Helvetica-Bold', 11)
-    c.drawString(W-BR-58, H-386, 'Examiner')
+    # ── Name (~760px x, ~415px y) ──
+    x, y = pos(760, 418)
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(x, y, s['name'].upper())
+
+    # ── Centre Address (~630px x, ~520px y) ──
+    address = CENTRE_ADDRESS.get(s['exam_centre'], s['exam_centre'])
+    x, y = pos(630, 520)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(x, y, address)
+
+    # ── Exam Date (shown below centre address) ──
+    x, y = pos(630, 548)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(x, y, f"Exam Date: {s['exam_date']}")
 
     c.save()
     buf.seek(0)
@@ -328,321 +215,130 @@ def build_admit_pdf(s):
 
 
 # ─────────────────────────────────────────────────────────────
-# PUBLIC ROUTES
+# ROUTES
 # ─────────────────────────────────────────────────────────────
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name   = request.form.get('name',        '').strip()
-        gender = request.form.get('gender',      '')
-        mobile = request.form.get('mobile',      '').strip()
-        centre = request.form.get('exam_centre', '')
-        date   = request.form.get('exam_date',   '')
-        time   = request.form.get('exam_time',   '')
+        name   = request.form.get('name', '').strip()
+        gender = request.form.get('gender')
+        mobile = request.form.get('mobile', '').strip()
+        centre = request.form.get('exam_centre')
+        date   = request.form.get('exam_date')
+        time   = request.form.get('exam_time')
 
-        errors = []
-        if not name:                           errors.append('Name is required.')
-        if gender not in ('Male', 'Female'):   errors.append('Please select gender.')
-        if not re.match(r'^\d{10}$', mobile): errors.append('Enter a valid 10-digit mobile number.')
-        if centre not in CENTRES:             errors.append('Please select a valid centre.')
-        if date not in EXAM_DATES:            errors.append('Please select a valid exam date.')
-        if time not in TIMINGS:               errors.append('Please select a valid time slot.')
+        if not re.match(r'^\d{10}$', mobile):
+            flash("Invalid mobile number. Please enter a 10-digit number.", "danger")
+            return redirect('/register')
 
-        if errors:
-            for e in errors: flash(e, 'danger')
-            return render_template('register.html', form=request.form,
-                                   centres=CENTRES, timings=TIMINGS,
-                                   exam_dates=EXAM_DATES)
-        try:
-            admit_no = generate_admit_no(centre)
-            conn = get_db(); cur = conn.cursor()
-            cur.execute("""
-                INSERT INTO registrations
-                  (admit_card_no,name,gender,mobile,exam_centre,exam_date,exam_time)
-                VALUES (%s,%s,%s,%s,%s,%s,%s)
-            """, (admit_no, name, gender, mobile, centre, date, time))
-            conn.commit(); cur.close(); conn.close()
-            flash(f'Registration successful! Hall Ticket No: <strong>{admit_no}</strong>. '
-                  f'Enter your mobile to download admit card.', 'success')
-            return redirect(url_for('check_admit'))
-        except Exception as e:
-            flash(f'Registration failed: {str(e)}', 'danger')
+        admit_no = generate_admit_no(centre)
 
-    return render_template('register.html', form={},
-                           centres=CENTRES, timings=TIMINGS,
+        conn = get_db()
+        cur  = conn.cursor()
+        cur.execute("""
+            INSERT INTO registrations
+                (admit_card_no, name, gender, mobile, exam_centre, exam_date, exam_time)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (admit_no, name, gender, mobile, centre, date, time))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash(f"Registration successful! Your Hall Ticket No: {admit_no}", "success")
+        return redirect('/check_admit')
+
+    return render_template('register.html',
+                           centres=CENTRES,
+                           timings=TIMINGS,
                            exam_dates=EXAM_DATES)
 
 
-@app.route('/check', methods=['GET', 'POST'])
-def check_admit():
-    student = None; students = []; error = None
+@app.route('/check_admit', methods=['GET', 'POST'])
+def check():
+    students = []
     if request.method == 'POST':
         mobile = request.form.get('mobile', '').strip()
-        if not mobile:
-            error = 'Please enter your mobile number.'
-        else:
-            try:
-                conn = get_db(); cur = conn.cursor(dictionary=True)
-                cur.execute(
-                    "SELECT * FROM registrations WHERE mobile=%s AND is_active=1 "
-                    "ORDER BY registered_at DESC", (mobile,))
-                students = cur.fetchall()
-                cur.close(); conn.close()
-                if not students:
-                    error = 'No registration found for this mobile number.'
-                elif len(students) == 1:
-                    student = students[0]
-            except Exception as e:
-                error = f'Database error: {str(e)}'
-    return render_template('check_admit.html',
-                           student=student, students=students, error=error)
+        conn = get_db()
+        cur  = conn.cursor(dictionary=True)
+        cur.execute("SELECT * FROM registrations WHERE mobile=%s", (mobile,))
+        students = cur.fetchall()
+        cur.close()
+        conn.close()
+    return render_template('check_admit.html', students=students)
 
 
-@app.route('/download_admit/<int:reg_id>')
-def download_admit(reg_id):
-    try:
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        cur.execute(
-            "SELECT * FROM registrations WHERE id=%s AND is_active=1", (reg_id,))
-        s = cur.fetchone(); cur.close(); conn.close()
-        if not s:
-            flash('Record not found.', 'danger')
-            return redirect(url_for('check_admit'))
-        buf = build_admit_pdf(s)
-        return send_file(buf, as_attachment=True,
-                         download_name=f"AdmitCard_{s['admit_card_no']}.pdf",
-                         mimetype='application/pdf')
-    except Exception as e:
-        flash(f'Error: {str(e)}', 'danger')
-        return redirect(url_for('check_admit'))
+@app.route('/download/<int:id>')
+def download(id):
+    conn = get_db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM registrations WHERE id=%s", (id,))
+    s = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not s:
+        flash("Record not found.", "danger")
+        return redirect('/check_admit')
+
+    pdf = build_admit_pdf(s)
+    return send_file(pdf,
+                     as_attachment=True,
+                     download_name=f"{s['admit_card_no']}.pdf",
+                     mimetype='application/pdf')
 
 
 # ─────────────────────────────────────────────────────────────
-# ADMIN ROUTES
+# ADMIN
 # ─────────────────────────────────────────────────────────────
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
-        if (request.form.get('username') == ADMIN_USERNAME and
-                request.form.get('password') == ADMIN_PASSWORD):
-            session['admin_logged_in'] = True
-            return redirect(url_for('admin_dashboard'))
-        flash('Invalid credentials.', 'danger')
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin'] = True
+            return redirect('/admin')
+        flash("Invalid username or password.", "danger")
     return render_template('admin_login.html')
 
 
 @app.route('/admin/logout')
 def admin_logout():
-    session.clear()
-    return redirect(url_for('admin_login'))
+    session.pop('admin', None)
+    return redirect('/admin/login')
 
 
 @app.route('/admin')
 @admin_required
-def admin_dashboard():
-    try:
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT COUNT(*) AS total FROM registrations")
-        total = cur.fetchone()['total']
-        cur.execute("SELECT exam_centre, COUNT(*) AS cnt FROM registrations GROUP BY exam_centre")
-        by_centre = cur.fetchall()
-        cur.execute("SELECT gender, COUNT(*) AS cnt FROM registrations GROUP BY gender")
-        by_gender = cur.fetchall()
-        cur.execute("SELECT exam_date, COUNT(*) AS cnt FROM registrations GROUP BY exam_date")
-        by_date = cur.fetchall()
-        cur.execute("SELECT * FROM registrations ORDER BY registered_at DESC LIMIT 10")
-        recent = cur.fetchall()
-        cur.close(); conn.close()
-        return render_template('admin_dashboard.html', total=total,
-                               by_centre=by_centre, by_gender=by_gender,
-                               by_date=by_date, recent=recent)
-    except Exception as e:
-        flash(f'DB Error: {str(e)}', 'danger')
-        return render_template('admin_dashboard.html', total=0,
-                               by_centre=[], by_gender=[], by_date=[], recent=[])
+def admin():
+    conn = get_db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("SELECT COUNT(*) AS total FROM registrations")
+    total = cur.fetchone()['total']
+    cur.close()
+    conn.close()
+    return render_template('admin_dashboard.html', total=total)
 
 
 @app.route('/admin/students')
 @admin_required
 def admin_students():
-    search = request.args.get('q',      '').strip()
-    centre = request.args.get('centre', '').strip()
-    date   = request.args.get('date',   '').strip()
-    gender = request.args.get('gender', '').strip()
-    page   = int(request.args.get('page', 1)); per = 20
-
-    try:
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        where = ['is_active=1']; params = []
-        if search:
-            where.append('(name LIKE %s OR mobile LIKE %s OR admit_card_no LIKE %s)')
-            params += [f'%{search}%'] * 3
-        if centre: where.append('exam_centre=%s'); params.append(centre)
-        if date:   where.append('exam_date=%s');   params.append(date)
-        if gender: where.append('gender=%s');      params.append(gender)
-        wsql = 'WHERE ' + ' AND '.join(where)
-        cur.execute(f"SELECT COUNT(*) AS cnt FROM registrations {wsql}", params)
-        total_rows = cur.fetchone()['cnt']
-        cur.execute(
-            f"SELECT * FROM registrations {wsql} "
-            f"ORDER BY registered_at DESC LIMIT %s OFFSET %s",
-            params + [per, (page-1)*per])
-        students = cur.fetchall()
-        cur.close(); conn.close()
-        return render_template('admin_students.html', students=students,
-                               search=search, centre=centre, date=date,
-                               gender=gender, page=page,
-                               total_pages=(total_rows+per-1)//per,
-                               total_rows=total_rows,
-                               centres=list(CENTRES.keys()),
-                               exam_dates=EXAM_DATES)
-    except Exception as e:
-        flash(f'Error: {str(e)}', 'danger')
-        return render_template('admin_students.html', students=[], search='',
-                               centre='', date='', gender='', page=1,
-                               total_pages=1, total_rows=0,
-                               centres=list(CENTRES.keys()),
-                               exam_dates=EXAM_DATES)
-
-
-@app.route('/admin/download_admit/<int:reg_id>')
-@admin_required
-def admin_download_admit(reg_id):
-    try:
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT * FROM registrations WHERE id=%s", (reg_id,))
-        s = cur.fetchone(); cur.close(); conn.close()
-        if not s:
-            flash('Not found.', 'danger')
-            return redirect(url_for('admin_students'))
-        buf = build_admit_pdf(s)
-        return send_file(buf, as_attachment=True,
-                         download_name=f"AdmitCard_{s['admit_card_no']}.pdf",
-                         mimetype='application/pdf')
-    except Exception as e:
-        flash(f'Error: {str(e)}', 'danger')
-        return redirect(url_for('admin_students'))
-
-
-@app.route('/admin/download_excel')
-@admin_required
-def download_excel():
-    try:
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        cur.execute(
-            "SELECT admit_card_no,name,gender,mobile,exam_centre,"
-            "exam_date,exam_time,registered_at FROM registrations "
-            "WHERE is_active=1 ORDER BY exam_centre,exam_date,exam_time")
-        rows = cur.fetchall(); cur.close(); conn.close()
-
-        wb = openpyxl.Workbook(); ws = wb.active; ws.title = 'SAT 2026'
-        thin = Side(style='thin'); bdr = Border(left=thin,right=thin,top=thin,bottom=thin)
-        hdrs = ['Hall Ticket','Name','Gender','Mobile','Centre','Date','Time','Registered']
-        for col, h in enumerate(hdrs, 1):
-            cell = ws.cell(row=1, column=col, value=h)
-            cell.font=Font(bold=True,color='FFFFFF',size=11)
-            cell.fill=PatternFill('solid',fgColor='1A237E')
-            cell.alignment=Alignment(horizontal='center'); cell.border=bdr
-        for ri, r in enumerate(rows, 2):
-            vals = [r['admit_card_no'],r['name'],r['gender'],r['mobile'],
-                    r['exam_centre'],r['exam_date'],r['exam_time'],
-                    str(r.get('registered_at',''))]
-            for ci, v in enumerate(vals, 1):
-                cell = ws.cell(row=ri, column=ci, value=v); cell.border=bdr
-                if ri%2==0: cell.fill=PatternFill('solid',fgColor='E8EAF6')
-        for col in ws.columns:
-            ws.column_dimensions[col[0].column_letter].width = min(
-                max(len(str(cell.value or '')) for cell in col)+4, 40)
-        buf = io.BytesIO(); wb.save(buf); buf.seek(0)
-        fname = f"SAT2026_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        return send_file(buf, as_attachment=True, download_name=fname,
-                         mimetype='application/vnd.openxmlformats-officedocument'
-                                  '.spreadsheetml.sheet')
-    except Exception as e:
-        flash(f'Excel export failed: {str(e)}', 'danger')
-        return redirect(url_for('admin_students'))
-
-
-@app.route('/admin/download_pdf_list')
-@admin_required
-def download_pdf_list():
-    try:
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        cur.execute(
-            "SELECT admit_card_no,name,gender,mobile,exam_centre,"
-            "exam_date,exam_time,registered_at FROM registrations "
-            "WHERE is_active=1 ORDER BY exam_centre,exam_date,exam_time")
-        rows = cur.fetchall(); cur.close(); conn.close()
-
-        buf = io.BytesIO()
-        doc = SimpleDocTemplate(buf, pagesize=landscape(A4),
-                                leftMargin=15*mm, rightMargin=15*mm,
-                                topMargin=15*mm, bottomMargin=15*mm)
-        ts = ParagraphStyle('t', fontSize=16, fontName='Helvetica-Bold',
-                            alignment=TA_CENTER,
-                            textColor=colors.HexColor('#1A237E'), spaceAfter=4)
-        ss = ParagraphStyle('s', fontSize=9, alignment=TA_CENTER,
-                            textColor=colors.gray, spaceAfter=12)
-        elems = [
-            Paragraph('CSC SAT 2026 — Registration List', ts),
-            Paragraph(f'Generated: {datetime.now().strftime("%d %B %Y %I:%M %p")}'
-                      f'  |  Total: {len(rows)}', ss),
-        ]
-        td = [['#','Hall Ticket','Name','Gender','Mobile',
-               'Centre','Date','Time','Registered']]
-        for i, r in enumerate(rows, 1):
-            ra = r.get('registered_at','')
-            if hasattr(ra,'strftime'): ra = ra.strftime('%d/%m/%Y %H:%M')
-            td.append([str(i),r['admit_card_no'],r['name'],r['gender'],
-                       r['mobile'],r['exam_centre'],r['exam_date'],
-                       r['exam_time'],str(ra)])
-        t = Table(td, repeatRows=1,
-                  colWidths=[10*mm,28*mm,50*mm,20*mm,30*mm,28*mm,48*mm,22*mm,38*mm])
-        t.setStyle(TableStyle([
-            ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#1A237E')),
-            ('TEXTCOLOR', (0,0),(-1,0),colors.white),
-            ('FONTNAME',  (0,0),(-1,0),'Helvetica-Bold'),
-            ('FONTSIZE',  (0,0),(-1,-1),8),
-            ('ALIGN',     (0,0),(-1,-1),'CENTER'),
-            ('VALIGN',    (0,0),(-1,-1),'MIDDLE'),
-            ('ROWBACKGROUNDS',(0,1),(-1,-1),
-             [colors.white, colors.HexColor('#E8EAF6')]),
-            ('GRID',(0,0),(-1,-1),0.5,colors.HexColor('#C5CAE9')),
-            ('TOPPADDING',(0,0),(-1,-1),4),
-            ('BOTTOMPADDING',(0,0),(-1,-1),4),
-        ]))
-        elems.append(t)
-        doc.build(elems); buf.seek(0)
-        fname = f"SAT2026_List_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        return send_file(buf, as_attachment=True, download_name=fname,
-                         mimetype='application/pdf')
-    except Exception as e:
-        flash(f'PDF export failed: {str(e)}', 'danger')
-        return redirect(url_for('admin_students'))
-
-
-@app.route('/admin/api/stats')
-@admin_required
-def api_stats():
-    try:
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT exam_centre,COUNT(*) AS cnt FROM registrations GROUP BY exam_centre")
-        by_centre = {r['exam_centre']:r['cnt'] for r in cur.fetchall()}
-        cur.execute("SELECT gender,COUNT(*) AS cnt FROM registrations GROUP BY gender")
-        by_gender = {r['gender']:r['cnt'] for r in cur.fetchall()}
-        cur.close(); conn.close()
-        return jsonify({'by_centre':by_centre,'by_gender':by_gender})
-    except Exception as e:
-        return jsonify({'error':str(e)}), 500
+    conn = get_db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM registrations ORDER BY registered_at DESC")
+    students = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template('admin_students.html', students=students)
 
 
 # ─────────────────────────────────────────────────────────────
-# RUN
+# RUN (local dev only - Gunicorn handles production)
 # ─────────────────────────────────────────────────────────────
-if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0", port=5000)
