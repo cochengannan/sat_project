@@ -5,14 +5,9 @@ import os, io, re
 from datetime import datetime
 from functools import wraps
 
-# PDF
 from reportlab.lib.pagesizes import landscape, A5
 from reportlab.lib import colors
-from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas as pdfcanvas
-from reportlab.lib.utils import ImageReader
-
-# Excel
 import openpyxl
 
 # ─────────────────────────────────────────────────────────────
@@ -22,7 +17,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "sat2026_secure_key")
 
 # ─────────────────────────────────────────────────────────────
-# DATABASE CONFIG (RAILWAY) — 10s timeout prevents startup hang
+# DATABASE CONFIG
 # ─────────────────────────────────────────────────────────────
 DB_CONFIG = {
     'host':               os.getenv("MYSQLHOST"),
@@ -73,7 +68,6 @@ TIMINGS = [
 def get_db():
     return mysql.connector.connect(**DB_CONFIG)
 
-
 def init_db():
     conn = get_db()
     cur = conn.cursor()
@@ -95,10 +89,6 @@ def init_db():
     cur.close()
     conn.close()
 
-
-# ─────────────────────────────────────────────────────────────
-# AUTO CREATE TABLE ON STARTUP (non-blocking — won't hang app)
-# ─────────────────────────────────────────────────────────────
 with app.app_context():
     try:
         init_db()
@@ -106,26 +96,21 @@ with app.app_context():
     except Exception as e:
         print(f"DB init warning (non-fatal): {e}")
 
-
 # ─────────────────────────────────────────────────────────────
 # ADMIT NUMBER GENERATION
-# Pammal: pmld901, pmld902 ...
-# Pallavaram: pvmd901, pvmd902 ...
-# Chrompet: chrd901, chrd902 ...
+# Pammal: pmld901+ | Pallavaram: pvmd901+ | Chrompet: chrd901+
 # ─────────────────────────────────────────────────────────────
 def generate_admit_no(centre):
     prefix = CENTRES.get(centre, 'sat')
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "SELECT COUNT(*) FROM registrations WHERE exam_centre=%s",
-        (centre,)
+        "SELECT COUNT(*) FROM registrations WHERE exam_centre=%s", (centre,)
     )
     count = cur.fetchone()[0]
     cur.close()
     conn.close()
     return f"{prefix}{901 + count}"
-
 
 # ─────────────────────────────────────────────────────────────
 # AUTH
@@ -138,74 +123,70 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
-
 # ─────────────────────────────────────────────────────────────
-# PDF GENERATION
-# Overlays student data on the official admit card image
-# Image: 1772 x 827 px | PDF canvas: landscape A5 = 595.3 x 419.5 pts
+# PDF GENERATION — overlays data on official admit card image
+# Image: 1772x827px | PDF: landscape A5 = 595.3x419.5 pts
+# Boxes: x=992-1530 (7 boxes, 77px each)
 # ─────────────────────────────────────────────────────────────
 def build_admit_pdf(s):
     buf = io.BytesIO()
-    W, H = landscape(A5)  # 595.3 x 419.5 pts
+    W, H = landscape(A5)
+    IMG_W, IMG_H = 1772, 827
+    sx = W / IMG_W
+    sy = H / IMG_H
+
+    def pos(px, py):
+        return px * sx, H - py * sy
 
     c = pdfcanvas.Canvas(buf, pagesize=(W, H))
 
-    # Draw background admit card image
     img_path = os.path.join(
-        os.path.dirname(__file__), 'static', 'images', 'admit_template.png'
+        os.path.dirname(__file__), 'static', 'images', 'admit_template.jpg'
     )
     c.drawImage(img_path, 0, 0, width=W, height=H)
-
-    # Scale factors: image px → PDF pts
-    sx = W / 1772
-    sy = H / 827
-
-    # Convert image coords (px from top-left) → PDF pts (from bottom-left)
-    def pos(img_x, img_y):
-        return img_x * sx, H - img_y * sy
-
-    # ── Admit Card No — place each char in its box ──
-    # Boxes start at x=793, y=213, each box ~82px wide
-    admit = s['admit_card_no']
-    c.setFont("Helvetica-Bold", 14)
     c.setFillColor(colors.HexColor("#00008B"))
-    for i, ch in enumerate(admit):
-        x, y = pos(793 + i * 82 + 30, 213)
+
+    # ── Admit Card No — 7 chars across 7 boxes (x=992-1530) ──
+    box_start = 992
+    box_w = 77
+    c.setFont("Helvetica-Bold", 14)
+    for i, ch in enumerate(s['admit_card_no']):
+        cx = box_start + i * box_w + box_w // 2
+        x, y = pos(cx, 218)
         c.drawCentredString(x, y, ch)
 
-    # ── Gender checkbox ──
-    c.setFont("Helvetica-Bold", 13)
+    # ── Gender X inside M or F box ──
+    c.setFont("Helvetica-Bold", 11)
     if s['gender'] == 'Male':
-        x, y = pos(653, 318)
+        x, y = pos(648, 342)
     else:
-        x, y = pos(725, 318)
+        x, y = pos(728, 342)
     c.drawString(x, y, "X")
 
-    # ── Exam Time ──
-    x, y = pos(940, 318)
-    c.setFont("Helvetica-Bold", 13)
+    # ── Time on the underline ──
+    x, y = pos(975, 337)
+    c.setFont("Helvetica-Bold", 12)
     c.drawString(x, y, s['exam_time'])
 
-    # ── Name ──
-    x, y = pos(760, 418)
-    c.setFont("Helvetica-Bold", 13)
+    # ── Name on the underline ──
+    x, y = pos(762, 440)
+    c.setFont("Helvetica-Bold", 12)
     c.drawString(x, y, s['name'].upper())
 
-    # ── Centre Address ──
+    # ── Centre Address — above calendar image ──
     address = CENTRE_ADDRESS.get(s['exam_centre'], s['exam_centre'])
-    x, y = pos(630, 520)
-    c.setFont("Helvetica-Bold", 11)
+    x, y = pos(820, 548)
+    c.setFont("Helvetica-Bold", 10)
     c.drawString(x, y, address)
 
-    # ── Exam Date ──
-    x, y = pos(630, 548)
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(x, y, f"Exam Date: {s['exam_date']}")
+    # ── Exam Date — below address ──
+    x, y = pos(820, 572)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(x, y, f"Exam Date : {s['exam_date']}")
 
     c.save()
     buf.seek(0)
     return buf
-
 
 # ─────────────────────────────────────────────────────────────
 # ROUTES
@@ -214,76 +195,95 @@ def build_admit_pdf(s):
 def home():
     return render_template('index.html')
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name   = request.form.get('name', '').strip()
-        gender = request.form.get('gender')
-        mobile = request.form.get('mobile', '').strip()
-        centre = request.form.get('exam_centre')
-        date   = request.form.get('exam_date')
-        time   = request.form.get('exam_time')
+        try:
+            name   = request.form.get('name', '').strip()
+            gender = request.form.get('gender', '').strip()
+            mobile = request.form.get('mobile', '').strip()
+            centre = request.form.get('exam_centre', '').strip()
+            date   = request.form.get('exam_date', '').strip()
+            time   = request.form.get('exam_time', '').strip()
 
-        if not re.match(r'^\d{10}$', mobile):
-            flash("Invalid mobile number. Please enter a 10-digit number.", "danger")
+            if not all([name, gender, mobile, centre, date, time]):
+                flash("All fields are required.", "danger")
+                return redirect('/register')
+
+            if not re.match(r'^\d{10}$', mobile):
+                flash("Invalid mobile number. Please enter a 10-digit number.", "danger")
+                return redirect('/register')
+
+            if gender not in ('Male', 'Female'):
+                flash("Please select a valid gender.", "danger")
+                return redirect('/register')
+
+            admit_no = generate_admit_no(centre)
+
+            conn = get_db()
+            cur  = conn.cursor()
+            cur.execute("""
+                INSERT INTO registrations
+                    (admit_card_no, name, gender, mobile, exam_centre, exam_date, exam_time)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (admit_no, name, gender, mobile, centre, date, time))
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            flash(f"Registration successful! Your Hall Ticket No: {admit_no}", "success")
+            return redirect('/check_admit')
+
+        except mysql.connector.Error as db_err:
+            flash(f"Database error: {db_err}", "danger")
             return redirect('/register')
-
-        admit_no = generate_admit_no(centre)
-
-        conn = get_db()
-        cur  = conn.cursor()
-        cur.execute("""
-            INSERT INTO registrations
-                (admit_card_no, name, gender, mobile, exam_centre, exam_date, exam_time)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (admit_no, name, gender, mobile, centre, date, time))
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        flash(f"Registration successful! Your Hall Ticket No: {admit_no}", "success")
-        return redirect('/check_admit')
+        except Exception as e:
+            flash(f"Something went wrong: {e}", "danger")
+            return redirect('/register')
 
     return render_template('register.html',
                            centres=CENTRES,
                            timings=TIMINGS,
                            exam_dates=EXAM_DATES)
 
-
 @app.route('/check_admit', methods=['GET', 'POST'])
 def check():
     students = []
     if request.method == 'POST':
         mobile = request.form.get('mobile', '').strip()
-        conn = get_db()
-        cur  = conn.cursor(dictionary=True)
-        cur.execute("SELECT * FROM registrations WHERE mobile=%s", (mobile,))
-        students = cur.fetchall()
-        cur.close()
-        conn.close()
+        try:
+            conn = get_db()
+            cur  = conn.cursor(dictionary=True)
+            cur.execute("SELECT * FROM registrations WHERE mobile=%s", (mobile,))
+            students = cur.fetchall()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            flash(f"Database error: {e}", "danger")
     return render_template('check_admit.html', students=students)
-
 
 @app.route('/download/<int:id>')
 def download(id):
-    conn = get_db()
-    cur  = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM registrations WHERE id=%s", (id,))
-    s = cur.fetchone()
-    cur.close()
-    conn.close()
+    try:
+        conn = get_db()
+        cur  = conn.cursor(dictionary=True)
+        cur.execute("SELECT * FROM registrations WHERE id=%s", (id,))
+        s = cur.fetchone()
+        cur.close()
+        conn.close()
 
-    if not s:
-        flash("Record not found.", "danger")
+        if not s:
+            flash("Record not found.", "danger")
+            return redirect('/check_admit')
+
+        pdf = build_admit_pdf(s)
+        return send_file(pdf,
+                         as_attachment=True,
+                         download_name=f"{s['admit_card_no']}.pdf",
+                         mimetype='application/pdf')
+    except Exception as e:
+        flash(f"Error generating PDF: {e}", "danger")
         return redirect('/check_admit')
-
-    pdf = build_admit_pdf(s)
-    return send_file(pdf,
-                     as_attachment=True,
-                     download_name=f"{s['admit_card_no']}.pdf",
-                     mimetype='application/pdf')
-
 
 # ─────────────────────────────────────────────────────────────
 # ADMIN
@@ -299,39 +299,43 @@ def admin_login():
         flash("Invalid username or password.", "danger")
     return render_template('admin_login.html')
 
-
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('admin', None)
     return redirect('/admin/login')
 
-
 @app.route('/admin')
 @admin_required
 def admin():
-    conn = get_db()
-    cur  = conn.cursor(dictionary=True)
-    cur.execute("SELECT COUNT(*) AS total FROM registrations")
-    total = cur.fetchone()['total']
-    cur.close()
-    conn.close()
+    try:
+        conn = get_db()
+        cur  = conn.cursor(dictionary=True)
+        cur.execute("SELECT COUNT(*) AS total FROM registrations")
+        total = cur.fetchone()['total']
+        cur.close()
+        conn.close()
+    except Exception as e:
+        total = 0
+        flash(f"DB error: {e}", "danger")
     return render_template('admin_dashboard.html', total=total)
-
 
 @app.route('/admin/students')
 @admin_required
 def admin_students():
-    conn = get_db()
-    cur  = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM registrations ORDER BY registered_at DESC")
-    students = cur.fetchall()
-    cur.close()
-    conn.close()
+    try:
+        conn = get_db()
+        cur  = conn.cursor(dictionary=True)
+        cur.execute("SELECT * FROM registrations ORDER BY registered_at DESC")
+        students = cur.fetchall()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        students = []
+        flash(f"DB error: {e}", "danger")
     return render_template('admin_students.html', students=students)
 
-
 # ─────────────────────────────────────────────────────────────
-# RUN (local dev only — Gunicorn handles production)
+# RUN
 # ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=5000)
