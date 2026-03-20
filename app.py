@@ -187,7 +187,7 @@ def register():
         conn.close()
 
         flash(f"Registration successful! Your Hall Ticket No: {admit_no}", "success")
-        return redirect('/check')
+        return redirect('/check_admit')
 
     return render_template('register.html',
                            centres=CENTRES,
@@ -195,7 +195,7 @@ def register():
                            exam_dates=EXAM_DATES)
 
 
-@app.route('/check', methods=['GET', 'POST'])
+@app.route('/check_admit', methods=['GET', 'POST'])
 def check():
     students = []
     if request.method == 'POST':
@@ -206,7 +206,7 @@ def check():
         students = cur.fetchall()
         cur.close()
         conn.close()
-    return render_template('check.html', students=students)
+    return render_template('check_admit.html', students=students)
 
 
 @app.route('/download/<int:id>')
@@ -220,7 +220,7 @@ def download(id):
 
     if not s:
         flash("Record not found.", "danger")
-        return redirect('/check')
+        return redirect('/check_admit')
 
     pdf = build_admit_pdf(s)
     return send_file(pdf,
@@ -259,7 +259,19 @@ def admin():
     total = cur.fetchone()['total']
     cur.close()
     conn.close()
-    return render_template('admin.html', total=total)
+    return render_template('admin_dashboard.html', total=total)
+
+
+@app.route('/admin/students')
+@admin_required
+def admin_students():
+    conn = get_db()
+    cur  = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM registrations ORDER BY registered_at DESC")
+    students = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template('admin_students.html', students=students)
 
 
 # ─────────────────────────────────────────────────────────────
