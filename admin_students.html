@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}CSC SAT 2026 — Scholarship Aptitude Test{% endblock %}
+{% block extra_head %}
+<style>
+/* ── Hero ───────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, #0D1257 0%, #1A237E 55%, #283593 100%);
+  color: #fff;
+  padding: 5rem 0 4rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 88vh;
+  display: flex;
+  align-items: center;
+}
+
+/* Animated floating circles */
+.hero-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.07;
+  animation: floatUp 8s ease-in-out infinite;
+}
+.hero-bg-circle:nth-child(1){width:380px;height:380px;top:-60px;right:-80px;background:#FFD700;animation-duration:9s;}
+.hero-bg-circle:nth-child(2){width:220px;height:220px;bottom:-50px;left:-30px;background:#fff;animation-duration:11s;animation-delay:-3s;}
+.hero-bg-circle:nth-child(3){width:150px;height:150px;top:40%;right:20%;background:#FFD700;animation-duration:7s;animation-delay:-5s;}
+.hero-bg-circle:nth-child(4){width:80px;height:80px;top:15%;left:40%;background:#fff;animation-duration:6s;animation-delay:-2s;}
+
+@keyframes floatUp {
+  0%,100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-28px) scale(1.06);}
+}
+
+/* Animated particles */
+.hero-particles {
+  position:absolute; inset:0; overflow:hidden; pointer-events:none;
+}
+.particle {
+  position:absolute;
+  width:4px; height:4px;
+  background:rgba(255,215,0,0.5);
+  border-radius:50%;
+  animation: rise linear infinite;
+}
+@keyframes rise {
+  0%  {transform:translateY(100vh) scale(0); opacity:0;}
+  10% {opacity:1;}
+  90% {opacity:0.6;}
+  100%{transform:translateY(-10vh) scale(1.5); opacity:0;}
+}
+
+/* Text animations */
+.hero-tag   {animation:fadeSlideDown .7s ease both;}
+.hero-title {animation:fadeSlideDown .9s ease both .15s;}
+.hero-desc  {animation:fadeSlideDown 1.1s ease both .3s;}
+.hero-btns  {animation:fadeSlideDown 1.3s ease both .45s;}
+.hero-stats {animation:fadeSlideUp  1.4s ease both .5s;}
+.hero-ring  {animation:popIn 1s cubic-bezier(.34,1.56,.64,1) both .6s;}
+
+@keyframes fadeSlideDown {
+  from{opacity:0;transform:translateY(-30px);}
+  to  {opacity:1;transform:translateY(0);}
+}
+@keyframes fadeSlideUp {
+  from{opacity:0;transform:translateY(30px);}
+  to  {opacity:1;transform:translateY(0);}
+}
+@keyframes popIn {
+  from{opacity:0;transform:scale(.5);}
+  to  {opacity:1;transform:scale(1);}
+}
+
+/* Pulsing ring */
+.pct-ring {
+  width:140px; height:140px; border-radius:50%;
+  border:4px solid #FFD700;
+  background:rgba(255,215,0,.1);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  margin:0 auto;
+  animation: pulse-ring 2.5s ease-in-out infinite;
+  position:relative;
+}
+.pct-ring::before {
+  content:'';
+  position:absolute; inset:-12px;
+  border-radius:50%;
+  border:2px solid rgba(255,215,0,0.25);
+  animation: pulse-ring 2.5s ease-in-out infinite reverse;
+}
+@keyframes pulse-ring {
+  0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,.3);}
+  50%     {box-shadow:0 0 0 20px rgba(255,215,0,0);}
+}
+.pct-ring .num {font-size:2.5rem;font-weight:900;color:#FFD700;line-height:1;}
+.pct-ring small{font-size:.68rem;color:rgba(255,255,255,.7);}
+
+/* Stat counters */
+.stat-counter {
+  opacity:0;
+  animation:fadeSlideUp .8s ease both;
+}
+.stat-counter:nth-child(1){animation-delay:.7s;}
+.stat-counter:nth-child(2){animation-delay:.85s;}
+.stat-counter:nth-child(3){animation-delay:1s;}
+.stat-num {
+  font-size:1.9rem; font-weight:900; color:#FFD700;
+  display:inline-block;
+  animation:countBounce .5s cubic-bezier(.34,1.56,.64,1) both 1.2s;
+}
+@keyframes countBounce{from{transform:scale(.5);}to{transform:scale(1);}}
+
+/* Badge */
+.badge-sat {
+  background:rgba(255,215,0,.15); color:#FFD700;
+  border:1px solid rgba(255,215,0,.4); font-size:.9rem;
+  padding:.45rem 1.2rem; border-radius:30px;
+  display:inline-flex; align-items:center; gap:.5rem;
+  margin-bottom:1rem;
+}
+
+/* ── How-it-works ──────────────────────────────────── */
+.step-card {
+  border:none; border-top:4px solid #1A237E; border-radius:12px;
+  box-shadow:0 2px 14px rgba(0,0,0,.07);
+  transition:transform .25s, box-shadow .25s;
+}
+.step-card:hover{transform:translateY(-6px);box-shadow:0 8px 28px rgba(0,0,0,.13);}
+.step-num {
+  width:38px;height:38px;border-radius:50%;
+  background:#1A237E;color:#fff;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;margin:0 auto .75rem;
+}
+
+/* ── Info band ─────────────────────────────────────── */
+.info-band{background:#FFFDE7;border-left:5px solid #FFD700;}
+
+/* ── Exam detail boxes ─────────────────────────────── */
+.exam-box{background:#E8EAF6;border:1px solid #c5cae9;border-radius:10px;}
+
+/* ── Countdown ─────────────────────────────────────── */
+.countdown-block {
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,215,0,.3);
+  border-radius:12px; padding:.8rem 1.2rem; min-width:70px; text-align:center;
+  backdrop-filter:blur(4px);
+}
+.countdown-num {font-size:2rem;font-weight:900;color:#FFD700;line-height:1;}
+.countdown-lbl {font-size:.65rem;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.06em;}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ── HERO ──────────────────────────────────────────────── -->
+<section class="hero">
+  <!-- Floating bg circles -->
+  <div class="hero-bg-circle"></div>
+  <div class="hero-bg-circle"></div>
+  <div class="hero-bg-circle"></div>
+  <div class="hero-bg-circle"></div>
+
+  <!-- Particles -->
+  <div class="hero-particles" id="particles"></div>
+
+  <div class="container position-relative" style="z-index:2;">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <div class="badge-sat hero-tag">
+          <i class="fas fa-trophy"></i>SAT 2026 — 33rd Scholarship Aptitude Test
+        </div>
+        <h1 class="display-4 fw-bold mb-3 hero-title">
+          Win Up to <span style="color:#FFD700;">75% Scholarship</span><br>
+          on Computer Courses
+        </h1>
+        <p class="lead mb-4 hero-desc" style="opacity:.85;">
+          Join thousands of students who have kickstarted their IT careers through
+          CSC's Scholarship Aptitude Test. Quality Education at Affordable Cost.
+        </p>
+        <div class="d-flex flex-wrap gap-3 mb-5 hero-btns">
+          <a href="/register" class="btn btn-gold btn-lg px-4 fw-bold">
+            <i class="fas fa-user-plus me-2"></i>Register Now
+          </a>
+          <a href="/check" class="btn btn-outline-light btn-lg px-4">
+            <i class="fas fa-id-card me-2"></i>Get Admit Card
+          </a>
+        </div>
+
+        <!-- Countdown -->
+        <div class="d-flex gap-3 flex-wrap hero-stats">
+          <div class="countdown-block"><div class="countdown-num" id="cd-days">--</div><div class="countdown-lbl">Days</div></div>
+          <div class="countdown-block"><div class="countdown-num" id="cd-hrs">--</div><div class="countdown-lbl">Hours</div></div>
+          <div class="countdown-block"><div class="countdown-num" id="cd-min">--</div><div class="countdown-lbl">Mins</div></div>
+          <div class="countdown-block"><div class="countdown-num" id="cd-sec">--</div><div class="countdown-lbl">Secs</div></div>
+          <div class="d-flex align-items-center ps-2">
+            <span style="color:rgba(255,255,255,.7);font-size:.85rem;">until<br><strong style="color:#FFD700;">Mar 29, 2026</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5 text-center">
+        <div class="pct-ring mb-4 hero-ring">
+          <span class="num">75%</span>
+          <small>SCHOLARSHIP</small>
+        </div>
+        <div class="row g-3 justify-content-center">
+          {% for val, label in [('40+','Years Legacy'),('33rd','Edition'),('ISO','9001:2015')] %}
+          <div class="col-4 stat-counter text-center">
+            <div class="stat-num">{{ val }}</div>
+            <div style="font-size:.75rem;opacity:.7;">{{ label }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── EXAM DATE BANNER ──────────────────────────────────── -->
+<section class="info-band py-3">
+  <div class="container">
+    <div class="row align-items-center text-center text-md-start g-2">
+      <div class="col-md-auto"><i class="fas fa-calendar-alt fa-2x" style="color:#C9A800;"></i></div>
+      <div class="col" style="color:#0D1257;">
+        <strong>Exam Dates: 29 March 2026 (Sunday) &amp; 04 April 2026 (Saturday)</strong>
+        &nbsp;|&nbsp; Slots every 30 min: 7:00 AM – 1:00 PM
+        &nbsp;|&nbsp; Centres: Pammal · Pallavaram · Chrompet
+      </div>
+      <div class="col-md-auto">
+        <a href="/register" class="btn btn-csc btn-sm">Register Free</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ──────────────────────────────────────── -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-1" style="color:#1A237E;">How It Works</h2>
+    <p class="text-center text-muted mb-4">3 simple steps to win your scholarship</p>
+    <div class="row g-4 justify-content-center">
+      {% for icon, title, desc in [
+        ('fa-user-plus',    'Register Free',    'Fill in your name, mobile and preferred centre. Registration is completely free.'),
+        ('fa-id-card',      'Get Admit Card',   'Enter your mobile number to download your personalised Hall Ticket PDF.'),
+        ('fa-pen-to-square','Write the Exam',   'Visit your exam centre on the chosen date and attempt the SAT.'),
+        ('fa-graduation-cap','Win Scholarship', 'Score well and win up to 75% scholarship on CSC computer courses.')
+      ] %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="card step-card h-100 p-4 text-center">
+          <div class="step-num">{{ loop.index }}</div>
+          <i class="fas {{ icon }} fa-2x mb-3" style="color:#1A237E;"></i>
+          <h5 class="fw-bold">{{ title }}</h5>
+          <p class="text-muted small mb-0">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── EXAM DETAILS ──────────────────────────────────────── -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-4" style="color:#1A237E;">Exam Details</h2>
+    <div class="row g-3 justify-content-center">
+      {% for icon, label, val in [
+        ('fa-calendar-alt',  'Exam Dates',   '29 Mar 2026 &amp; 04 Apr 2026'),
+        ('fa-clock',         'Time Slots',   '7:00 AM – 1:00 PM (every 30 min)'),
+        ('fa-map-marker-alt','Centres',      'Pammal · Pallavaram · Chrompet'),
+        ('fa-file-alt',      'Syllabus',     'Aptitude · Reasoning · Basic Computer'),
+      ] %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="exam-box p-3 text-center h-100">
+          <i class="fas {{ icon }} fa-2x mb-2" style="color:#1A237E;"></i>
+          <div class="text-muted small">{{ label }}</div>
+          <div class="fw-bold mt-1" style="color:#0D1257;">{{ val }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="/register" class="btn btn-csc btn-lg px-5 me-3">
+        <i class="fas fa-user-plus me-2"></i>Register Now
+      </a>
+      <a href="/check" class="btn btn-gold btn-lg px-5">
+        <i class="fas fa-download me-2"></i>Download Admit Card
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Particles ────────────────────────────────────────
+(function() {
+  const container = document.getElementById('particles');
+  if (!container) return;
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left: ${Math.random()*100}%;
+      width: ${2+Math.random()*4}px;
+      height: ${2+Math.random()*4}px;
+      animation-duration: ${5+Math.random()*10}s;
+      animation-delay: ${-Math.random()*12}s;
+      opacity: ${0.3+Math.random()*0.5};
+    `;
+    container.appendChild(p);
+  }
+})();
+
+// ── Countdown to March 29, 2026 ──────────────────────
+(function countdown() {
+  const target = new Date('2026-03-29T07:00:00').getTime();
+  function tick() {
+    const now  = Date.now();
+    const diff = Math.max(0, target - now);
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000)  / 60000);
+    const s = Math.floor((diff % 60000)    / 1000);
+    const fmt = n => String(n).padStart(2,'0');
+    document.getElementById('cd-days').textContent = fmt(d);
+    document.getElementById('cd-hrs').textContent  = fmt(h);
+    document.getElementById('cd-min').textContent  = fmt(m);
+    document.getElementById('cd-sec').textContent  = fmt(s);
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}
