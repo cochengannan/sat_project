@@ -34,7 +34,6 @@
   }
 </style>
 {% endblock %}
-
 {% block content %}
 <div class="container py-5">
   <div class="row justify-content-center">
@@ -73,85 +72,101 @@
         </div>
       </div>
 
-      <!-- Multiple registrations -->
+      <!-- Multiple registrations found -->
       {% if students and students|length > 1 %}
       <div class="multi-header">
         <i class="fas fa-info-circle me-2" style="color:#1A237E;"></i>
-        <strong>{{ students|length }} registrations found</strong>
+        <strong>{{ students|length }} registrations found</strong> for this mobile number.
+        Download each admit card below.
       </div>
-
       {% for s in students %}
       <div class="admit-card-wrap">
         <div class="admit-card-header d-flex align-items-center gap-3 flex-wrap">
           <span class="csc-text-badge">CSC</span>
           <div>
             <div class="fw-bold small">ADMIT CARD — SAT 2026</div>
+            <div style="font-size:.72rem;opacity:.7;">33rd Scholarship Aptitude Test</div>
           </div>
           <div class="ms-auto"><span class="hall-badge">{{ s.admit_card_no }}</span></div>
         </div>
-
         <div class="p-3">
-          <div class="fw-bold">{{ s.name }}</div>
-          <div class="small text-muted">{{ s.exam_centre }}</div>
-
+          <div class="exam-pill mb-3 d-flex align-items-center gap-3">
+            <div class="text-center px-3 py-2 rounded"
+                 style="background:#1A237E;color:#fff;min-width:64px;">
+              {% if 'March' in s.exam_date %}
+              <div style="font-size:.55rem;font-weight:700;">MARCH</div>
+              <div style="font-size:1.5rem;font-weight:900;line-height:1;">29</div>
+              <div style="font-size:.55rem;">SUN</div>
+              {% else %}
+              <div style="font-size:.55rem;font-weight:700;">APRIL</div>
+              <div style="font-size:1.5rem;font-weight:900;line-height:1;">4</div>
+              <div style="font-size:.55rem;">SAT</div>
+              {% endif %}
+            </div>
+            <div>
+              <div class="fw-bold" style="color:#1A237E;">{{ s.exam_time }}</div>
+              <div class="text-muted small">{{ s.exam_centre }} &nbsp;|&nbsp; {{ s.gender }}</div>
+              <div class="fw-semibold small" style="color:#0D1257;">{{ s.name }}</div>
+            </div>
+          </div>
           <a href="/download_admit/{{ s.id }}"
-             class="btn btn-sm fw-bold w-100 mt-2"
+             class="btn btn-sm fw-bold w-100"
              style="background:#1A237E;color:#fff;border:none;">
-            Download Admit Card
+            <i class="fas fa-download me-2"></i>Download Admit Card — {{ s.admit_card_no }}
           </a>
         </div>
       </div>
       {% endfor %}
 
-      <!-- SINGLE STUDENT (UPDATED) -->
+      <!-- Single registration found -->
       {% elif student %}
       <div class="admit-card-wrap">
-
-        <div style="position:relative; width:100%;">
-
-          <!-- IMAGE -->
-          <img src="{{ url_for('static', filename='images/admit_template.jpg') }}"
-               style="width:100%; border-radius:12px;">
-
-          <!-- DATA OVERLAY -->
-          <label style="position:absolute; top:20px; right:30px; font-weight:800;">
-            {{ student.admit_card_no }}
-          </label>
-
-          <label style="position:absolute; top:160px; left:120px;">
-            {{ student.name }}
-          </label>
-
-          <label style="position:absolute; top:200px; left:120px;">
-            {{ student.gender }}
-          </label>
-
-          <label style="position:absolute; top:240px; left:120px;">
-            {{ student.mobile }}
-          </label>
-
-          <label style="position:absolute; top:280px; left:120px;">
-            {{ student.exam_centre }}
-          </label>
-
-          <label style="position:absolute; top:320px; left:120px;">
-            {{ student.exam_time }}
-          </label>
-
-          <label style="position:absolute; top:360px; left:120px;">
-            {{ student.exam_date }}
-          </label>
-
+        <div class="admit-card-header d-flex align-items-center gap-3">
+          <span class="csc-text-badge">CSC</span>
+          <div>
+            <div class="fw-bold">ADMIT CARD — SAT 2026</div>
+            <div class="small" style="opacity:.75;">33rd Scholarship Aptitude Test</div>
+          </div>
+          <div class="ms-auto"><span class="hall-badge">{{ student.admit_card_no }}</span></div>
         </div>
+        <div class="p-4">
+          <div class="exam-pill mb-3 d-flex align-items-center gap-3">
+            <div class="text-center px-3 py-2 rounded"
+                 style="background:#1A237E;color:#fff;min-width:68px;">
+              {% if 'March' in student.exam_date %}
+              <div style="font-size:.6rem;font-weight:700;">MARCH</div>
+              <div style="font-size:1.8rem;font-weight:900;line-height:1;">29</div>
+              <div style="font-size:.6rem;">SUNDAY</div>
+              {% else %}
+              <div style="font-size:.6rem;font-weight:700;">APRIL</div>
+              <div style="font-size:1.8rem;font-weight:900;line-height:1;">4</div>
+              <div style="font-size:.6rem;">SATURDAY</div>
+              {% endif %}
+            </div>
+            <div>
+              <div class="fw-bold" style="color:#1A237E;font-size:1.05rem;">{{ student.exam_time }}</div>
+              <div class="text-muted small">{{ student.exam_centre }}</div>
+            </div>
+          </div>
 
-        <div class="mt-3 d-grid p-3">
-          <a href="/download_admit/{{ student.id }}"
-             class="btn btn-lg fw-bold"
-             style="background:#1A237E;color:#fff;border:none;">
-            Download Admit Card (PDF)
-          </a>
+          {% for label, key in [('Name','name'),('Gender','gender'),('Mobile','mobile')] %}
+          <div class="detail-row row g-0">
+            <div class="col-5 detail-label">{{ label }}</div>
+            <div class="col-7 detail-value">{{ student[key] or '—' }}</div>
+          </div>
+          {% endfor %}
+
+          <div class="mt-3 d-grid">
+            <a href="/download_admit/{{ student.id }}"
+               class="btn btn-lg fw-bold"
+               style="background:#1A237E;color:#fff;border:none;">
+              <i class="fas fa-download me-2"></i>Download Admit Card (PDF)
+            </a>
+          </div>
+          <p class="text-muted small text-center mt-2 mb-0">
+            <i class="fas fa-info-circle me-1"></i>Bring this card + valid photo ID to the exam.
+          </p>
         </div>
-
       </div>
       {% endif %}
 
@@ -164,7 +179,6 @@
   </div>
 </div>
 {% endblock %}
-
 {% block extra_js %}
 <script>
 document.getElementById('checkForm').addEventListener('submit', function(e) {
