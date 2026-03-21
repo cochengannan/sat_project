@@ -1,135 +1,295 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}CSC SAT 2026{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800;900&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --navy:      #0f1f6b;
-      --navy-dark: #080f3d;
-      --yellow:    #ffcc00;
-      --orange:    #ff6b35;
-      --green:     #00c875;
-      --red:       #ff3d57;
-    }
-    * { box-sizing: border-box; }
-    body { font-family: 'Nunito', sans-serif; background: #f0f4ff; margin: 0; }
-    h1,h2,h3,h4,h5,h6 { font-family: 'Baloo 2', sans-serif; }
+{% extends "base.html" %}
+{% block title %}Get Admit Card — CSC SAT 2026{% endblock %}
+{% block extra_head %}
+<style>
+.check-page {
+  min-height: calc(100vh - 70px);
+  background: linear-gradient(135deg, #080f3d 0%, #0f1f6b 50%, #1a2f8a 100%);
+  padding: 3rem 1rem 4rem;
+  position: relative; overflow: hidden;
+}
+.check-page::before {
+  content:''; position:absolute; inset:0;
+  background-image: radial-gradient(rgba(255,255,255,.04) 1.5px, transparent 1.5px);
+  background-size: 28px 28px; pointer-events:none;
+}
 
-    .navbar {
-      background: var(--navy-dark) !important;
-      padding: 0 1.5rem;
-      box-shadow: 0 3px 20px rgba(0,0,0,.45);
-      position: sticky; top: 0; z-index: 1000;
-    }
-    .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; padding: .6rem 0; }
-    .brand-logo {
-      width: 44px; height: 44px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--yellow), var(--orange));
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Baloo 2', sans-serif; font-weight: 900; font-size: 1.2rem; color: var(--navy-dark);
-      box-shadow: 0 4px 12px rgba(255,204,0,.5);
-      flex-shrink: 0;
-    }
-    .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
-    .brand-csc { color: var(--yellow); font-family: 'Baloo 2', sans-serif; font-weight: 900; font-size: 1.05rem; letter-spacing: .02em; }
-    .brand-sat { color: rgba(255,255,255,.55); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; }
-    .nav-link {
-      color: rgba(255,255,255,.8) !important; font-weight: 700; font-size: .88rem;
-      padding: .5rem .95rem !important; border-radius: 8px; transition: all .2s; letter-spacing: .01em;
-    }
-    .nav-link i { margin-right: 5px; }
-    .nav-link:hover { color: #fff !important; background: rgba(255,255,255,.1); }
-    .nav-link.active-link { color: var(--navy-dark) !important; background: var(--yellow); }
+/* Page header */
+.check-header { text-align:center; margin-bottom:2.5rem; position:relative; z-index:2; }
+.check-header .pg-tag {
+  display:inline-flex; align-items:center; gap:7px;
+  background:rgba(255,204,0,.15); border:1.5px solid rgba(255,204,0,.4);
+  color:var(--yellow); padding:.35rem 1rem; border-radius:50px;
+  font-size:.8rem; font-weight:800; letter-spacing:.05em; margin-bottom:.9rem;
+}
+.check-header h1 { font-family:'Baloo 2',sans-serif; font-weight:900; color:#fff; font-size:2.2rem; margin-bottom:.4rem; }
+.check-header p { color:rgba(255,255,255,.6); font-size:.95rem; }
 
-    .flash-wrap { position: fixed; top: 72px; right: 14px; z-index: 9999; min-width: 300px; max-width: 420px; }
-    .flash-wrap .alert { border: none; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.18); font-size: .88rem; font-weight: 600; }
+/* Search card */
+.search-card {
+  background:#fff; border-radius:24px; overflow:hidden;
+  max-width:520px; margin:0 auto 1.5rem;
+  box-shadow:0 24px 80px rgba(0,0,0,.35);
+  position:relative; z-index:2;
+}
+.card-stripe {
+  height:6px;
+  background:linear-gradient(90deg,var(--yellow),var(--orange),#ff3d57,var(--yellow));
+  background-size:200% 100%; animation:stripeMove 3s linear infinite;
+}
+@keyframes stripeMove{from{background-position:0 0}to{background-position:200% 0}}
+.search-body { padding:2rem 2.2rem; }
 
-    footer {
-      background: var(--navy-dark); color: rgba(255,255,255,.5);
-      padding: 2.5rem 0 1.5rem; margin-top: 4rem; font-size: .82rem; text-align: center;
-    }
-    .footer-logo {
-      width: 50px; height: 50px; border-radius: 12px;
-      background: linear-gradient(135deg, var(--yellow), var(--orange));
-      display: inline-flex; align-items: center; justify-content: center;
-      font-family: 'Baloo 2', sans-serif; font-weight: 900; font-size: 1.3rem; color: var(--navy-dark);
-      margin-bottom: .8rem; box-shadow: 0 4px 14px rgba(255,204,0,.4);
-    }
-    footer strong { color: var(--yellow); }
-    footer a { color: var(--yellow); text-decoration: none; font-weight: 700; }
-    footer a:hover { color: #fff; }
-    footer hr { border-color: rgba(255,255,255,.1); max-width: 340px; margin: 1rem auto; }
-  </style>
-  {% block extra_head %}{% endblock %}
-</head>
-<body>
+.form-label { font-weight:800; font-size:.85rem; color:#334155; margin-bottom:.4rem; }
+.input-mob {
+  border:2px solid #e2e8f0; border-radius:0 12px 12px 0;
+  font-size:1rem; padding:.75rem 1rem; font-family:'Nunito',sans-serif;
+  color:#1e293b; transition:all .2s; background:#f8fafc; outline:none; width:100%;
+}
+.input-mob:focus { border-color:var(--navy); box-shadow:0 0 0 4px rgba(15,31,107,.1); background:#fff; }
+.input-mob::placeholder { color:#c0cce0; }
+.igt-mob {
+  background:#e8edf8; border:2px solid #e2e8f0; border-right:none;
+  color:var(--navy); border-radius:12px 0 0 12px; padding:0 .95rem;
+  font-size:.95rem; display:flex; align-items:center;
+}
+.input-group:focus-within .igt-mob { border-color:var(--navy); background:#fff; }
+.input-group:focus-within .input-mob { border-color:var(--navy); }
 
-<nav class="navbar navbar-expand-lg">
-  <div class="container-fluid px-3">
-    <a class="navbar-brand" href="/">
-      <div class="brand-logo">C</div>
-      <div class="brand-text">
-        <span class="brand-csc">CSC SAT 2026</span>
-        <span class="brand-sat">Scholarship Aptitude Test</span>
+.btn-find {
+  background:linear-gradient(135deg,var(--navy),#1a2f8a);
+  color:#fff; border:none; border-radius:14px;
+  font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1rem;
+  padding:.9rem; width:100%;
+  box-shadow:0 6px 20px rgba(15,31,107,.35); transition:all .25s; cursor:pointer;
+}
+.btn-find:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(15,31,107,.45); }
+
+/* Admit card preview */
+.admit-wrap {
+  max-width:540px; margin:0 auto 1.5rem;
+  position:relative; z-index:2;
+}
+.admit-card {
+  background:#fff; border-radius:24px; overflow:hidden;
+  box-shadow:0 24px 80px rgba(0,0,0,.35);
+}
+.admit-card-top {
+  background:linear-gradient(135deg,#080f3d,#0f1f6b,#1a2f8a);
+  padding:1.4rem 1.5rem 1.2rem;
+  position:relative; overflow:hidden;
+}
+.admit-card-top::after {
+  content:''; position:absolute; right:-30px; top:-40px;
+  width:180px; height:180px; border-radius:50%;
+  background:rgba(255,204,0,.06); pointer-events:none;
+}
+.admit-logo {
+  width:40px; height:40px; border-radius:9px;
+  background:linear-gradient(135deg,var(--yellow),var(--orange));
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:'Baloo 2',sans-serif; font-weight:900; font-size:1rem; color:#080f3d;
+  flex-shrink:0;
+}
+.admit-title { font-family:'Baloo 2',sans-serif; font-weight:900; color:#fff; font-size:1rem; }
+.admit-sub { font-size:.68rem; color:rgba(255,255,255,.55); letter-spacing:.06em; }
+.admit-no-pill {
+  background:rgba(255,204,0,.18); border:1.5px solid rgba(255,204,0,.45);
+  color:var(--yellow); font-family:'Baloo 2',sans-serif; font-weight:900;
+  font-size:.95rem; padding:.3rem 1rem; border-radius:50px; white-space:nowrap;
+}
+
+.admit-body { padding:1.6rem; }
+
+/* Date widget */
+.date-widget {
+  background:linear-gradient(135deg,#0f1f6b,#080f3d);
+  border-radius:14px; width:82px; flex-shrink:0;
+  overflow:hidden; text-align:center; border:1.5px solid rgba(255,204,0,.2);
+}
+.dw-month { background:var(--red); font-size:.58rem; font-weight:900; color:#fff; padding:.28rem 0; text-transform:uppercase; letter-spacing:.08em; }
+.dw-day   { font-family:'Baloo 2',sans-serif; font-size:2.4rem; font-weight:900; color:#fff; line-height:1; padding:.15rem 0; }
+.dw-dow   { background:rgba(255,204,0,.15); font-size:.58rem; font-weight:800; color:var(--yellow); padding:.25rem; margin:.2rem .4rem; border-radius:4px; letter-spacing:.06em; }
+
+.exam-info-card {
+  background:#f8fafc; border:1.5px solid #e2e8f0;
+  border-radius:14px; padding:.9rem 1rem;
+  display:flex; align-items:center; gap:.9rem; flex:1;
+}
+.exam-time-val { font-family:'Baloo 2',sans-serif; font-weight:900; color:var(--navy); font-size:1.3rem; }
+.exam-centre-val { color:#64748b; font-size:.9rem; font-weight:600; }
+
+/* Detail rows */
+.det-table { border-radius:12px; overflow:hidden; border:1.5px solid #e2e8f0; }
+.det-row { display:flex; align-items:center; padding:.7rem 1rem; border-bottom:1.5px solid #f1f5f9; }
+.det-row:last-child { border-bottom:none; }
+.det-lbl { font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#94a3b8; width:85px; flex-shrink:0; }
+.det-val { font-weight:700; color:#1e293b; font-size:.93rem; }
+
+.btn-dl {
+  background:linear-gradient(135deg,var(--navy),#1a2f8a);
+  color:#fff; border:none; border-radius:14px;
+  font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1rem;
+  padding:.95rem; width:100%; text-align:center; text-decoration:none;
+  box-shadow:0 6px 20px rgba(15,31,107,.3); transition:all .25s;
+  display:block;
+}
+.btn-dl:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(15,31,107,.45); color:#fff; }
+
+/* Multi results */
+.multi-result {
+  max-width:520px; margin:0 auto 1rem;
+  position:relative; z-index:2;
+}
+.result-item {
+  background:#fff; border-radius:16px; margin-bottom:.8rem;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);
+  border-left:5px solid var(--yellow); overflow:hidden;
+  display:flex; align-items:center; padding:1rem 1.2rem; gap:1rem;
+}
+.result-no {
+  font-family:'Baloo 2',sans-serif; font-weight:900; color:var(--navy); font-size:1.1rem;
+}
+.result-meta { font-size:.82rem; color:#64748b; font-weight:600; }
+.btn-dl-sm {
+  background:linear-gradient(135deg,var(--navy),#1a2f8a); color:#fff; border:none;
+  border-radius:10px; font-weight:800; font-size:.82rem; padding:.5rem 1rem;
+  text-decoration:none; white-space:nowrap; transition:all .2s; flex-shrink:0;
+}
+.btn-dl-sm:hover { color:#fff; transform:translateY(-1px); }
+
+.not-reg { text-align:center; color:rgba(255,255,255,.55); font-size:.88rem; position:relative; z-index:2; margin-top:1rem; }
+.not-reg a { color:var(--yellow); font-weight:800; text-decoration:none; }
+.not-reg a:hover { color:#fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="check-page">
+
+  <div class="check-header">
+    <div class="pg-tag"><i class="fas fa-id-card"></i> Hall Ticket</div>
+    <h1>Download Your Admit Card</h1>
+    <p>Enter your registered mobile number to retrieve your hall ticket</p>
+  </div>
+
+  <!-- Search box -->
+  <div class="search-card">
+    <div class="card-stripe"></div>
+    <div class="search-body">
+      {% if error %}
+      <div class="alert alert-danger py-2 small mb-3 rounded-3 border-0"
+           style="background:#fef2f2;color:#b91c1c;font-weight:700;">
+        <i class="fas fa-circle-exclamation me-1"></i>{{ error }}
       </div>
-    </a>
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nb"
-            style="color:rgba(255,255,255,.8);font-size:1.1rem;">
-      <i class="fas fa-bars"></i>
-    </button>
-    <div class="collapse navbar-collapse" id="nb">
-      <ul class="navbar-nav ms-auto gap-1 py-2 py-lg-0">
-        <li class="nav-item">
-          <a class="nav-link {% if request.path=='/' %}active-link{% endif %}" href="/">
-            <i class="fas fa-home"></i>Home
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if '/register' in request.path %}active-link{% endif %}" href="/register">
-            <i class="fas fa-user-edit"></i>Register
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if '/check' in request.path %}active-link{% endif %}" href="/check">
-            <i class="fas fa-id-card"></i>Admit Card
-          </a>
-        </li>
-      </ul>
+      {% endif %}
+      <label class="form-label">Registered Mobile Number</label>
+      <form method="POST" action="/check" id="cForm">
+        <div class="input-group mb-3">
+          <span class="igt-mob"><i class="fas fa-mobile-alt"></i></span>
+          <input type="tel" class="input-mob" name="mobile"
+                 placeholder="Enter your 10-digit mobile number"
+                 value="{{ request.form.get('mobile','') }}"
+                 maxlength="10" required autofocus>
+        </div>
+        <button type="submit" class="btn-find">
+          <i class="fas fa-magnifying-glass me-2"></i>Find My Admit Card
+        </button>
+      </form>
     </div>
   </div>
-</nav>
 
-<div class="flash-wrap">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for cat, msg in messages %}
-    <div class="alert alert-{{ cat }} alert-dismissible fade show">
-      {{ msg|safe }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  <!-- Multiple results -->
+  {% if students and students|length > 1 %}
+  <div class="multi-result">
+    <div class="alert mb-3 rounded-3 border-0 py-2 px-3"
+         style="background:rgba(255,204,0,.18);color:var(--yellow);font-weight:700;font-size:.88rem;">
+      <i class="fas fa-list me-1"></i> {{ students|length }} registrations found for this number.
+    </div>
+    {% for s in students %}
+    <div class="result-item">
+      <div class="flex-grow-1">
+        <div class="result-no">{{ s.admit_card_no }}</div>
+        <div class="result-meta">{{ s.name }} &nbsp;·&nbsp; {{ s.exam_centre }}</div>
+        <div class="result-meta">{{ s.exam_date }} &nbsp;·&nbsp; {{ s.exam_time }}</div>
+      </div>
+      <a href="/download_admit/{{ s.id }}" class="btn-dl-sm">
+        <i class="fas fa-download me-1"></i>PDF
+      </a>
     </div>
     {% endfor %}
-  {% endwith %}
-</div>
-
-{% block content %}{% endblock %}
-
-<footer>
-  <div class="container">
-    <div class="footer-logo">C</div>
-    <div class="fw-bold mb-1" style="color:#fff;font-family:'Baloo 2',sans-serif;font-size:1rem;">Computer Software College</div>
-    <div class="mb-2">ISO 9001:2015 Certified &nbsp;·&nbsp; 40+ Years of Value Oriented Computer Education</div>
-    <hr>
-    <div>Exam Centres: <strong>Pammal &nbsp;·&nbsp; Pallavaram &nbsp;·&nbsp; Chrompet</strong>
-    &nbsp;&nbsp;|&nbsp;&nbsp; <a href="/admin/login">Admin Portal</a></div>
   </div>
-</footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-{% block extra_js %}{% endblock %}
-</body>
-</html>
+  <!-- Single result -->
+  {% elif student %}
+  <div class="admit-wrap">
+    <div class="admit-card">
+      <div class="admit-card-top">
+        <div class="d-flex align-items-center gap-2 mb-0">
+          <div class="admit-logo">C</div>
+          <div class="flex-grow-1">
+            <div class="admit-title">ADMIT CARD — SAT 2026</div>
+            <div class="admit-sub">33RD SCHOLARSHIP APTITUDE TEST</div>
+          </div>
+          <span class="admit-no-pill">{{ student.admit_card_no }}</span>
+        </div>
+      </div>
+
+      <div class="admit-body">
+        <!-- Exam date/time row -->
+        <div class="d-flex align-items-stretch gap-3 mb-4">
+          <div class="date-widget">
+            {% if 'March' in student.exam_date %}
+            <div class="dw-month">March</div>
+            <div class="dw-day">29</div>
+            <div class="dw-dow">SUNDAY</div>
+            {% else %}
+            <div class="dw-month">April</div>
+            <div class="dw-day">04</div>
+            <div class="dw-dow">SATURDAY</div>
+            {% endif %}
+          </div>
+          <div class="exam-info-card">
+            <div>
+              <div class="exam-time-val">{{ student.exam_time }}</div>
+              <div class="exam-centre-val"><i class="fas fa-map-marker-alt me-1" style="color:var(--red);font-size:.8rem;"></i>{{ student.exam_centre }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="det-table mb-4">
+          {% for label, key in [('Name','name'),('Gender','gender'),('Mobile','mobile')] %}
+          <div class="det-row">
+            <span class="det-lbl">{{ label }}</span>
+            <span class="det-val">{{ student[key] or '—' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <a href="/download_admit/{{ student.id }}" class="btn-dl">
+          <i class="fas fa-download me-2"></i>Download Admit Card (PDF)
+        </a>
+        <p class="text-muted text-center mt-2 mb-0" style="font-size:.78rem;">
+          <i class="fas fa-circle-info me-1" style="color:var(--orange);"></i>
+          Bring this card + a valid photo ID on exam day.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="not-reg">
+    Not registered yet? <a href="/register">Register here →</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('cForm').addEventListener('submit', function(e){
+  const m = document.querySelector('[name=mobile]').value.trim();
+  if(!/^\d{10}$/.test(m)){ e.preventDefault(); alert('Please enter a valid 10-digit mobile number.'); }
+});
+</script>
+{% endblock %}
