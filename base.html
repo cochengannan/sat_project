@@ -1,109 +1,99 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Admin — CSC SAT 2026{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <style>
-    :root { --navy:#0a0a6e; --red:#e60000; }
-    body { background:#f0f2f8; }
+{% extends 'base.html' %}
+{% block title %}Download Admit Card - CSC SAT 2026{% endblock %}
 
-    /* Sidebar */
-    #sidebar {
-      min-height: 100vh; width: 240px; position: fixed;
-      background: var(--navy); padding-top: 1rem; z-index: 100;
-    }
-    #sidebar .brand {
-      color: #fdd835; font-weight: 800; font-size: 1.1rem;
-      padding: .6rem 1.2rem 1rem; border-bottom: 1px solid rgba(255,255,255,.15);
-    }
-    #sidebar .nav-link {
-      color: rgba(255,255,255,.78); padding: .65rem 1.2rem;
-      border-radius: 8px; margin: 2px 8px; font-weight: 500;
-    }
-    #sidebar .nav-link:hover, #sidebar .nav-link.active {
-      background: rgba(255,255,255,.12); color: #fff;
-    }
-    #sidebar .nav-link i { width: 22px; }
-
-    /* Main content */
-    #main { margin-left: 240px; padding: 2rem; }
-
-    /* Top bar */
-    .topbar {
-      background: #fff; border-radius: 12px;
-      padding: .75rem 1.5rem; margin-bottom: 1.5rem;
-      display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 2px 12px rgba(0,0,0,.07);
-    }
-    .topbar h5 { margin: 0; font-weight: 700; color: var(--navy); }
-
-    /* Cards */
-    .card { border: none; border-radius: 14px; box-shadow: 0 2px 14px rgba(0,0,0,.07); }
-    .stat-card { border-left: 5px solid var(--red) !important; }
-
-    /* Responsive */
-    @media(max-width:768px){
-      #sidebar { width:100%; min-height:auto; position:relative; }
-      #main { margin-left:0; }
-    }
-  </style>
-  {% block extra_css %}{% endblock %}
-</head>
-<body>
-
-<!-- Sidebar -->
-<div id="sidebar">
-  <div class="brand"><i class="bi bi-shield-lock me-2"></i>CSC Admin</div>
-  <nav class="nav flex-column mt-2">
-    <a class="nav-link {% if request.endpoint=='admin_dashboard' %}active{% endif %}"
-       href="{{ url_for('admin_dashboard') }}">
-      <i class="bi bi-speedometer2"></i> Dashboard
-    </a>
-    <a class="nav-link {% if request.endpoint=='admin_students' %}active{% endif %}"
-       href="{{ url_for('admin_students') }}">
-      <i class="bi bi-people-fill"></i> Students
-    </a>
-    <a class="nav-link" href="{{ url_for('download_excel') }}">
-      <i class="bi bi-file-earmark-excel"></i> Export Excel
-    </a>
-    <a class="nav-link" href="{{ url_for('download_pdf_list') }}">
-      <i class="bi bi-file-earmark-pdf"></i> Export PDF List
-    </a>
-    <hr style="border-color:rgba(255,255,255,.2); margin:.5rem 1rem;">
-    <a class="nav-link" href="{{ url_for('index') }}" target="_blank">
-      <i class="bi bi-box-arrow-up-right"></i> View Site
-    </a>
-    <a class="nav-link text-warning" href="{{ url_for('admin_logout') }}">
-      <i class="bi bi-box-arrow-left"></i> Logout
-    </a>
-  </nav>
+{% block content %}
+<div class="hero-strip">
+  <h1><i class="bi bi-card-text me-2"></i>Download Admit Card</h1>
+  <p>Enter your registered mobile number to retrieve your admit card.</p>
 </div>
 
-<!-- Main -->
-<div id="main">
-  <div class="topbar">
-    <h5>{% block page_title %}Dashboard{% endblock %}</h5>
-    <span class="text-muted small"><i class="bi bi-person-circle me-1"></i>Admin</span>
-  </div>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for cat, msg in messages %}
-        <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
-          {{ msg|safe }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <div class="card mb-4">
+        <div class="card-header text-white py-3" style="background:#0a0a6e;">
+          <i class="bi bi-search me-2"></i>Find Your Admit Card
         </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+        <div class="card-body p-4">
+          <form method="POST" action="{{ url_for('check_admit') }}">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Registered Mobile Number</label>
+              <input type="tel" name="mobile" class="form-control form-control-lg"
+                     placeholder="Enter 10-digit mobile number" maxlength="10" required>
+            </div>
+            {% if error %}
+              <div class="alert alert-danger py-2">{{ error }}</div>
+            {% endif %}
+            <div class="d-grid">
+              <button type="submit" class="btn btn-csc btn-lg">
+                <i class="bi bi-search me-2"></i>Search
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
-  {% block content %}{% endblock %}
+      <!-- Single result -->
+      {% if student %}
+      <div class="card border-success">
+        <div class="card-header bg-success text-white py-3">
+          <i class="bi bi-person-check-fill me-2"></i>Registration Found
+        </div>
+        <div class="card-body p-4">
+          <table class="table table-borderless mb-3">
+            <tr><th class="text-muted" width="40%">Hall Ticket</th>
+                <td class="fw-bold fs-5 text-danger">{{ student.admit_card_no }}</td></tr>
+            <tr><th class="text-muted">Name</th>
+                <td class="fw-semibold">{{ student.name }}</td></tr>
+            <tr><th class="text-muted">Gender</th>
+                <td>{{ student.gender }}</td></tr>
+            <tr><th class="text-muted">Centre</th>
+                <td>{{ student.exam_centre }}</td></tr>
+            <tr><th class="text-muted">Exam Date</th>
+                <td>{{ student.exam_date }}</td></tr>
+            <tr><th class="text-muted">Time</th>
+                <td>{{ student.exam_time }}</td></tr>
+          </table>
+          <div class="d-grid">
+            <a href="{{ url_for('download_admit', reg_id=student.id) }}"
+               class="btn btn-csc btn-lg">
+              <i class="bi bi-download me-2"></i>Download Admit Card PDF
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Multiple results -->
+      {% if students|length > 1 %}
+      <div class="card">
+        <div class="card-header text-white py-3" style="background:#0a0a6e;">
+          <i class="bi bi-people-fill me-2"></i>{{ students|length }} Registrations Found
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for st in students %}
+            <div class="list-group-item p-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-bold text-danger">{{ st.admit_card_no }}</div>
+                  <div class="fw-semibold">{{ st.name }}</div>
+                  <small class="text-muted">{{ st.exam_centre }} &nbsp;·&nbsp; {{ st.exam_date }} &nbsp;·&nbsp; {{ st.exam_time }}</small>
+                </div>
+                <a href="{{ url_for('download_admit', reg_id=st.id) }}"
+                   class="btn btn-sm btn-csc">
+                  <i class="bi bi-download"></i> PDF
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-{% block extra_js %}{% endblock %}
-</body>
-</html>
+{% endblock %}
