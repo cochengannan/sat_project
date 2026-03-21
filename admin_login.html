@@ -1,192 +1,172 @@
-{% extends 'admin_base.html' %}
-{% block title %}Dashboard — CSC SAT 2026 Admin{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CSC SAT 2026{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --navy:        #1a237e;
+      --navy-dark:   #0d1257;
+      --navy-mid:    #1e2a8a;
+      --yellow:      #ffd700;
+      --yellow-dark: #c9a800;
+      --cream:       #fffde7;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f8; margin: 0; }
 
-{% block extra_css %}
-<style>
-  .chart-card {
-    background: #fff;
-    border-radius: 14px;
-    padding: 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    height: 100%;
-  }
-  .chart-card h6 { font-weight: 700; color: var(--navy); font-size: 14px; margin-bottom: 16px; }
-  .progress-item { margin-bottom: 14px; }
-  .progress-item .pi-label { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; font-weight: 500; }
-  .progress-item .pi-label .name { color: #555; }
-  .progress-item .pi-label .count { color: var(--navy); font-weight: 700; }
-  .progress { height: 8px; border-radius: 10px; background: #f0f0f0; }
-  .progress-bar { border-radius: 10px; }
-</style>
-{% endblock %}
+    /* ── Navbar ── */
+    .navbar {
+      background: var(--navy-dark) !important;
+      padding: .75rem 1.5rem;
+      box-shadow: 0 2px 16px rgba(0,0,0,.3);
+    }
+    .navbar-brand {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none;
+    }
+    .navbar-brand .csc-badge {
+      background: var(--yellow);
+      color: var(--navy-dark);
+      font-weight: 900;
+      font-size: .95rem;
+      padding: 3px 10px;
+      border-radius: 5px;
+      letter-spacing: .02em;
+    }
+    .navbar-brand .brand-text {
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: .03em;
+    }
+    .nav-link {
+      color: rgba(255,255,255,.85) !important;
+      font-weight: 500;
+      padding: .5rem .9rem !important;
+      border-radius: 6px;
+      transition: .2s;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--yellow) !important;
+      background: rgba(255,215,0,.1);
+    }
+    .nav-link i { margin-right: 5px; }
 
-{% block admin_content %}
-<div class="page-header">
-  <h4><i class="fas fa-tachometer-alt me-2" style="color:var(--red)"></i>Dashboard</h4>
-  <p>Overview of CSC SAT 2026 registrations</p>
-</div>
+    /* ── Buttons ── */
+    .btn-navy {
+      background: var(--navy);
+      color: #fff; border: none;
+      font-weight: 600;
+      transition: .2s;
+    }
+    .btn-navy:hover { background: var(--navy-dark); color: #fff; }
+    .btn-yellow {
+      background: var(--yellow);
+      color: var(--navy-dark);
+      border: none;
+      font-weight: 700;
+      transition: .2s;
+    }
+    .btn-yellow:hover { background: var(--yellow-dark); color: var(--navy-dark); }
+    .btn-outline-white {
+      background: transparent;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,.6);
+      font-weight: 600;
+      transition: .2s;
+    }
+    .btn-outline-white:hover { background: rgba(255,255,255,.1); color: #fff; border-color: #fff; }
 
-<!-- STATS -->
-<div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card red">
-      <div class="sc-icon"><i class="fas fa-users"></i></div>
-      <div>
-        <div class="sc-num">{{ total }}</div>
-        <div class="sc-label">Total Registrations</div>
-      </div>
-    </div>
-  </div>
-  {% set male_count = namespace(v=0) %}
-  {% set female_count = namespace(v=0) %}
-  {% for g in by_gender %}
-    {% if g.gender == 'Male' %}{% set male_count.v = g.cnt %}{% endif %}
-    {% if g.gender == 'Female' %}{% set female_count.v = g.cnt %}{% endif %}
-  {% endfor %}
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card navy">
-      <div class="sc-icon"><i class="fas fa-mars"></i></div>
-      <div>
-        <div class="sc-num">{{ male_count.v }}</div>
-        <div class="sc-label">Male Students</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card gold">
-      <div class="sc-icon"><i class="fas fa-venus"></i></div>
-      <div>
-        <div class="sc-num">{{ female_count.v }}</div>
-        <div class="sc-label">Female Students</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card green">
-      <div class="sc-icon"><i class="fas fa-school"></i></div>
-      <div>
-        <div class="sc-num">{{ by_centre|length }}</div>
-        <div class="sc-label">Active Centres</div>
-      </div>
-    </div>
-  </div>
-</div>
+    /* ── Flash messages ── */
+    .flash-wrap {
+      position: fixed; top: 70px; right: 16px;
+      z-index: 9999; min-width: 320px; max-width: 420px;
+    }
+    .flash-wrap .alert {
+      border: none; border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+      font-size: .9rem;
+    }
 
-<div class="row g-3 mb-4">
-  <!-- By Centre -->
-  <div class="col-md-4">
-    <div class="chart-card">
-      <h6><i class="fas fa-map-marker-alt me-1" style="color:var(--red)"></i>By Centre</h6>
-      {% for c in by_centre %}
-      <div class="progress-item">
-        <div class="pi-label">
-          <span class="name">{{ c.exam_centre }}</span>
-          <span class="count">{{ c.cnt }}</span>
-        </div>
-        <div class="progress">
-          <div class="progress-bar bg-danger" style="width:{% if total > 0 %}{{ (c.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
-        </div>
-      </div>
-      {% endfor %}
-      {% if not by_centre %}
-      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
-      {% endif %}
-    </div>
-  </div>
+    /* ── Footer ── */
+    footer {
+      background: var(--navy-dark);
+      color: rgba(255,255,255,.65);
+      padding: 1.8rem 0;
+      margin-top: 3rem;
+      font-size: .85rem;
+      text-align: center;
+    }
+    footer strong { color: var(--yellow); }
+    footer a { color: var(--yellow); text-decoration: none; }
+    footer a:hover { color: #fff; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
 
-  <!-- By Gender -->
-  <div class="col-md-4">
-    <div class="chart-card">
-      <h6><i class="fas fa-venus-mars me-1" style="color:var(--red)"></i>By Gender</h6>
-      {% for g in by_gender %}
-      <div class="progress-item">
-        <div class="pi-label">
-          <span class="name">{{ g.gender }}</span>
-          <span class="count">{{ g.cnt }}</span>
-        </div>
-        <div class="progress">
-          <div class="progress-bar {% if g.gender == 'Male' %}bg-primary{% else %}" style="background:#c2185b!important;{% endif %}width:{% if total > 0 %}{{ (g.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
-        </div>
-      </div>
-      {% endfor %}
-      {% if not by_gender %}
-      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- By Date -->
-  <div class="col-md-4">
-    <div class="chart-card">
-      <h6><i class="fas fa-calendar me-1" style="color:var(--red)"></i>By Exam Date</h6>
-      {% for d in by_date %}
-      <div class="progress-item">
-        <div class="pi-label">
-          <span class="name" style="font-size:11px;">{{ d.exam_date[:20] }}...</span>
-          <span class="count">{{ d.cnt }}</span>
-        </div>
-        <div class="progress">
-          <div class="progress-bar" style="background:var(--navy);width:{% if total > 0 %}{{ (d.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
-        </div>
-      </div>
-      {% endfor %}
-      {% if not by_date %}
-      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-<!-- RECENT REGISTRATIONS -->
-<div class="chart-card">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h6 class="mb-0"><i class="fas fa-clock me-1" style="color:var(--red)"></i>Recent Registrations</h6>
-    <a href="{{ url_for('admin_students') }}" class="btn btn-sm" style="background:var(--navy);color:#fff;border-radius:8px;font-size:12px;padding:5px 14px;">
-      View All <i class="fas fa-arrow-right ms-1"></i>
+<!-- ── Navbar ── -->
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand" href="/">
+      <span class="csc-badge">CSC</span>
+      <span class="brand-text">SAT 2026</span>
     </a>
+    <button class="navbar-toggler border-0" type="button"
+            data-bs-toggle="collapse" data-bs-target="#navmenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navmenu">
+      <ul class="navbar-nav ms-auto gap-1">
+        <li class="nav-item">
+          <a class="nav-link {{ 'active' if request.path=='/' }}" href="/">
+            <i class="fas fa-home"></i>Home
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{ 'active' if '/register' in request.path }}" href="/register">
+            <i class="fas fa-user-plus"></i>Register
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{ 'active' if '/check' in request.path }}" href="/check">
+            <i class="fas fa-id-card"></i>Admit Card
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
-  <div class="table-responsive">
-    <table class="table sat-table mb-0">
-      <thead>
-        <tr>
-          <th>Hall Ticket</th>
-          <th>Name</th>
-          <th>Gender</th>
-          <th>Mobile</th>
-          <th>Centre</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in recent %}
-        <tr>
-          <td><span style="font-weight:700;color:var(--red);">{{ s.admit_card_no }}</span></td>
-          <td style="font-weight:600;">{{ s.name }}</td>
-          <td>
-            <span class="{% if s.gender == 'Male' %}badge-male{% else %}badge-female{% endif %}">{{ s.gender }}</span>
-          </td>
-          <td style="font-family:monospace;">{{ s.mobile }}</td>
-          <td><span class="badge-centre">{{ s.exam_centre }}</span></td>
-          <td style="font-size:12px;">{{ s.exam_date }}</td>
-          <td style="font-size:12px;">{{ s.exam_time }}</td>
-          <td>
-            <a href="{{ url_for('admin_download_admit', reg_id=s.id) }}" class="btn btn-sm" style="background:#e8eaf6;color:var(--navy);border-radius:6px;font-size:11px;padding:4px 10px;">
-              <i class="fas fa-download"></i>
-            </a>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="8" class="text-center text-muted py-4" style="font-size:14px;">
-            <i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>No registrations yet
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+</nav>
+
+<!-- ── Flash messages ── -->
+<div class="flash-wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+      {{ msg|safe }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
 </div>
-{% endblock %}
+
+{% block content %}{% endblock %}
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="container">
+    <p class="mb-1"><strong>Computer Software College</strong> — ISO 9001:2015 Certified Institution</p>
+    <p class="mb-0">Pioneering 40 Years of Value Oriented Computer Education &nbsp;|&nbsp;
+      <a href="/admin/login">Admin Portal</a>
+    </p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

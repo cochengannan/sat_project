@@ -1,192 +1,503 @@
-{% extends 'admin_base.html' %}
-{% block title %}Dashboard — CSC SAT 2026 Admin{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
-
-{% block extra_css %}
+{% extends "base.html" %}
+{% block title %}CSC SAT 2026 — Scholarship Aptitude Test{% endblock %}
+{% block extra_head %}
 <style>
-  .chart-card {
-    background: #fff;
-    border-radius: 14px;
-    padding: 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    height: 100%;
-  }
-  .chart-card h6 { font-weight: 700; color: var(--navy); font-size: 14px; margin-bottom: 16px; }
-  .progress-item { margin-bottom: 14px; }
-  .progress-item .pi-label { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; font-weight: 500; }
-  .progress-item .pi-label .name { color: #555; }
-  .progress-item .pi-label .count { color: var(--navy); font-weight: 700; }
-  .progress { height: 8px; border-radius: 10px; background: #f0f0f0; }
-  .progress-bar { border-radius: 10px; }
+/* ════════════════════════════════════════════════
+   HERO SECTION
+═══════════════════════════════════════════════════ */
+.hero {
+  background: linear-gradient(135deg, #0d1257 0%, #1a237e 55%, #283593 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+  color: #fff;
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  padding: 5rem 0 4rem;
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Floating orbs */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(1px);
+  animation: orbFloat ease-in-out infinite;
+  pointer-events: none;
+}
+.orb-1 { width:380px;height:380px;background:rgba(255,215,0,.06);top:-80px;right:-60px;animation-duration:10s; }
+.orb-2 { width:260px;height:260px;background:rgba(255,255,255,.04);bottom:-70px;left:-50px;animation-duration:13s;animation-delay:-4s; }
+.orb-3 { width:160px;height:160px;background:rgba(255,215,0,.05);top:30%;left:38%;animation-duration:8s;animation-delay:-2s; }
+.orb-4 { width:100px;height:100px;background:rgba(255,255,255,.03);top:15%;right:28%;animation-duration:6s;animation-delay:-6s; }
+
+@keyframes orbFloat {
+  0%,100% { transform: translateY(0) scale(1) rotate(0deg); }
+  33%      { transform: translateY(-28px) scale(1.06) rotate(3deg); }
+  66%      { transform: translateY(14px) scale(.97) rotate(-2deg); }
+}
+
+/* Particles */
+.particles-container { position:absolute;inset:0;overflow:hidden;pointer-events:none; }
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,215,0,.55);
+  animation: particleRise linear infinite;
+}
+@keyframes particleRise {
+  0%   { transform:translateY(110vh) scale(0);  opacity:0; }
+  8%   { opacity:1; }
+  92%  { opacity:.5; }
+  100% { transform:translateY(-10vh) scale(1.4); opacity:0; }
+}
+
+/* ── Hero text entrance animations ── */
+.anim-tag   { animation: fadeSlideDown .7s cubic-bezier(.22,1,.36,1) both; }
+.anim-h1    { animation: fadeSlideDown .9s cubic-bezier(.22,1,.36,1) .12s both; }
+.anim-desc  { animation: fadeSlideDown 1.1s cubic-bezier(.22,1,.36,1) .24s both; }
+.anim-btns  { animation: fadeSlideDown 1.3s cubic-bezier(.22,1,.36,1) .36s both; }
+.anim-cd    { animation: fadeSlideUp   1.2s cubic-bezier(.22,1,.36,1) .5s both; }
+.anim-ring  { animation: popSpring     1s   cubic-bezier(.34,1.56,.64,1) .45s both; }
+.anim-stats { animation: fadeSlideUp   1.1s cubic-bezier(.22,1,.36,1) .65s both; }
+
+@keyframes fadeSlideDown {
+  from { opacity:0; transform:translateY(-36px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeSlideUp {
+  from { opacity:0; transform:translateY(36px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes popSpring {
+  0%   { opacity:0; transform:scale(.3) rotate(-8deg); }
+  60%  { transform:scale(1.08) rotate(2deg); }
+  100% { opacity:1; transform:scale(1) rotate(0deg); }
+}
+
+/* Badge pill */
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,215,0,.14);
+  border: 1px solid rgba(255,215,0,.45);
+  color: #ffd700;
+  padding: .5rem 1.3rem;
+  border-radius: 30px;
+  font-size: .88rem; font-weight: 600;
+  margin-bottom: 1.2rem;
+  backdrop-filter: blur(6px);
+}
+
+/* 75% pulsing ring */
+.pct-ring {
+  width: 155px; height: 155px; border-radius: 50%;
+  border: 5px solid #ffd700;
+  background: rgba(255,215,0,.08);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  margin: 0 auto; position: relative;
+  animation: ringPulse 2.8s ease-in-out infinite;
+}
+.pct-ring::before {
+  content:''; position:absolute; inset:-16px; border-radius:50%;
+  border: 2px solid rgba(255,215,0,.2);
+  animation: ringPulse 2.8s ease-in-out infinite reverse;
+}
+.pct-ring::after {
+  content:''; position:absolute; inset:-30px; border-radius:50%;
+  border: 1px solid rgba(255,215,0,.08);
+  animation: ringPulse 2.8s ease-in-out 1.4s infinite;
+}
+@keyframes ringPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(255,215,0,.3); }
+  50%      { box-shadow:0 0 0 24px rgba(255,215,0,0); }
+}
+.pct-ring .num   { font-size:2.7rem;font-weight:900;color:#ffd700;line-height:1; }
+.pct-ring .label { font-size:.62rem;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.06em;margin-top:2px; }
+
+/* Stat counters */
+.stat-item { text-align:center; }
+.stat-num  {
+  font-size:2rem; font-weight:900; color:#ffd700; line-height:1;
+  display: block;
+  animation: statBounce .6s cubic-bezier(.34,1.56,.64,1) 1.2s both;
+}
+@keyframes statBounce {
+  from { transform:scale(.4); opacity:0; }
+  to   { transform:scale(1);  opacity:1; }
+}
+.stat-lbl { font-size:.72rem;color:rgba(255,255,255,.6);margin-top:2px; }
+
+/* Countdown blocks */
+.cd-block {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,215,0,.28);
+  border-radius: 12px; padding: .7rem 1rem;
+  min-width: 65px; text-align: center;
+  backdrop-filter: blur(6px);
+  transition: transform .2s, border-color .2s;
+}
+.cd-block:hover { transform:translateY(-3px); border-color:rgba(255,215,0,.55); }
+.cd-num { font-size:1.9rem;font-weight:900;color:#ffd700;line-height:1;font-variant-numeric:tabular-nums; }
+.cd-lbl { font-size:.58rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.07em;margin-top:2px; }
+
+/* ════════════════════════════════════════════════
+   INFO BAND
+═══════════════════════════════════════════════════ */
+.info-band {
+  background: #fffde7;
+  border-left: none;
+  border-top: 4px solid #ffd700;
+  border-bottom: 1px solid #ffe082;
+  padding: .9rem 0;
+}
+
+/* ════════════════════════════════════════════════
+   SCROLL REVEAL (applied via JS)
+═══════════════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity .7s cubic-bezier(.22,1,.36,1),
+              transform .7s cubic-bezier(.22,1,.36,1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: .1s; }
+.reveal-delay-2 { transition-delay: .2s; }
+.reveal-delay-3 { transition-delay: .3s; }
+.reveal-delay-4 { transition-delay: .4s; }
+
+/* ════════════════════════════════════════════════
+   HOW IT WORKS CARDS
+═══════════════════════════════════════════════════ */
+.step-card {
+  background: #fff;
+  border: none;
+  border-top: 4px solid #1a237e;
+  border-radius: 16px;
+  box-shadow: 0 2px 18px rgba(26,35,126,.08);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  transition: transform .3s cubic-bezier(.22,1,.36,1),
+              box-shadow .3s ease;
+  position: relative; overflow: hidden;
+}
+.step-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(26,35,126,.03) 0%, transparent 60%);
+  opacity: 0; transition: opacity .3s;
+}
+.step-card:hover { transform:translateY(-8px); box-shadow:0 16px 40px rgba(26,35,126,.14); }
+.step-card:hover::before { opacity:1; }
+.step-num {
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,#1a237e,#283593);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:1rem;margin:0 auto .9rem;
+  box-shadow:0 4px 14px rgba(26,35,126,.3);
+}
+.step-icon {
+  font-size:2.4rem;color:#1a237e;margin-bottom:1rem;
+  transition:transform .3s;
+}
+.step-card:hover .step-icon { transform:scale(1.15) rotate(-3deg); }
+
+/* ════════════════════════════════════════════════
+   EXAM DETAIL CARDS
+═══════════════════════════════════════════════════ */
+.exam-card {
+  background: #fff;
+  border-radius: 16px; padding: 1.8rem 1.5rem; text-align: center;
+  border: 1px solid #e8eaf6;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s;
+}
+.exam-card:hover { transform:translateY(-6px); box-shadow:0 12px 32px rgba(26,35,126,.12); }
+.exam-card-icon {
+  font-size:2.2rem;color:#1a237e;margin-bottom:.6rem;
+  transition:transform .3s;
+}
+.exam-card:hover .exam-card-icon { transform:scale(1.18); }
+.exam-card-label { font-size:.78rem;color:#9e9e9e;margin-bottom:.3rem; }
+.exam-card-val   { font-weight:700;color:#1a237e;font-size:.95rem; }
+
+/* ════════════════════════════════════════════════
+   CTA BUTTONS
+═══════════════════════════════════════════════════ */
+.btn-yellow {
+  background: #ffd700; color: #0d1257; border: none;
+  font-weight: 700; border-radius: 10px;
+  padding: .8rem 2rem; font-size: 1rem;
+  box-shadow: 0 4px 18px rgba(255,215,0,.4);
+  transition: transform .2s, box-shadow .2s, background .2s;
+}
+.btn-yellow:hover {
+  background: #ffca00; color: #0d1257;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255,215,0,.5);
+}
+.btn-outline-white {
+  background: transparent; color: #fff;
+  border: 2px solid rgba(255,255,255,.55);
+  font-weight: 600; border-radius: 10px;
+  padding: .8rem 2rem; font-size: 1rem;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+.btn-outline-white:hover {
+  background: rgba(255,255,255,.1); color: #fff;
+  border-color: #fff; transform: translateY(-2px);
+}
+.btn-navy {
+  background: #1a237e; color: #fff; border: none;
+  font-weight: 700; border-radius: 10px;
+  transition: background .2s, transform .2s;
+}
+.btn-navy:hover { background:#0d1257; color:#fff; transform:translateY(-1px); }
 </style>
 {% endblock %}
 
-{% block admin_content %}
-<div class="page-header">
-  <h4><i class="fas fa-tachometer-alt me-2" style="color:var(--red)"></i>Dashboard</h4>
-  <p>Overview of CSC SAT 2026 registrations</p>
-</div>
+{% block content %}
 
-<!-- STATS -->
-<div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card red">
-      <div class="sc-icon"><i class="fas fa-users"></i></div>
-      <div>
-        <div class="sc-num">{{ total }}</div>
-        <div class="sc-label">Total Registrations</div>
-      </div>
-    </div>
-  </div>
-  {% set male_count = namespace(v=0) %}
-  {% set female_count = namespace(v=0) %}
-  {% for g in by_gender %}
-    {% if g.gender == 'Male' %}{% set male_count.v = g.cnt %}{% endif %}
-    {% if g.gender == 'Female' %}{% set female_count.v = g.cnt %}{% endif %}
-  {% endfor %}
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card navy">
-      <div class="sc-icon"><i class="fas fa-mars"></i></div>
-      <div>
-        <div class="sc-num">{{ male_count.v }}</div>
-        <div class="sc-label">Male Students</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card gold">
-      <div class="sc-icon"><i class="fas fa-venus"></i></div>
-      <div>
-        <div class="sc-num">{{ female_count.v }}</div>
-        <div class="sc-label">Female Students</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card green">
-      <div class="sc-icon"><i class="fas fa-school"></i></div>
-      <div>
-        <div class="sc-num">{{ by_centre|length }}</div>
-        <div class="sc-label">Active Centres</div>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- ════════════════════════════════════════════
+     HERO SECTION
+═════════════════════════════════════════════ -->
+<section class="hero" id="hero-section">
+  <!-- Floating orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
 
-<div class="row g-3 mb-4">
-  <!-- By Centre -->
-  <div class="col-md-4">
-    <div class="chart-card">
-      <h6><i class="fas fa-map-marker-alt me-1" style="color:var(--red)"></i>By Centre</h6>
-      {% for c in by_centre %}
-      <div class="progress-item">
-        <div class="pi-label">
-          <span class="name">{{ c.exam_centre }}</span>
-          <span class="count">{{ c.cnt }}</span>
+  <!-- Particles -->
+  <div class="particles-container" id="particles"></div>
+
+  <div class="container position-relative" style="z-index:2;">
+    <div class="row align-items-center g-5">
+
+      <!-- Left copy -->
+      <div class="col-lg-7">
+        <div class="hero-badge anim-tag">
+          <i class="fas fa-trophy"></i>
+          SAT 2026 — 33rd Scholarship Aptitude Test
         </div>
-        <div class="progress">
-          <div class="progress-bar bg-danger" style="width:{% if total > 0 %}{{ (c.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
+
+        <h1 class="display-4 fw-bold mb-3 anim-h1" style="line-height:1.15;">
+          Win Up to
+          <span style="color:#ffd700;">75% Scholarship</span><br>
+          on Computer Courses
+        </h1>
+
+        <p class="lead mb-4 anim-desc" style="opacity:.85;max-width:540px;">
+          Join thousands of students who have kickstarted their IT careers
+          through CSC's Scholarship Aptitude Test.
+          Quality Education at Affordable Cost.
+        </p>
+
+        <div class="d-flex flex-wrap gap-3 mb-5 anim-btns">
+          <a href="/register" class="btn btn-yellow btn-lg">
+            <i class="fas fa-user-plus me-2"></i>Register Now
+          </a>
+          <a href="/check" class="btn btn-outline-white btn-lg">
+            <i class="fas fa-id-card me-2"></i>Get Admit Card
+          </a>
+        </div>
+
+        <!-- Live countdown -->
+        <div class="d-flex gap-3 align-items-center flex-wrap anim-cd">
+          <div class="cd-block"><div class="cd-num" id="cd-d">00</div><div class="cd-lbl">Days</div></div>
+          <div class="cd-block"><div class="cd-num" id="cd-h">00</div><div class="cd-lbl">Hours</div></div>
+          <div class="cd-block"><div class="cd-num" id="cd-m">00</div><div class="cd-lbl">Mins</div></div>
+          <div class="cd-block"><div class="cd-num" id="cd-s">00</div><div class="cd-lbl">Secs</div></div>
+          <div class="ps-1">
+            <div style="font-size:.78rem;color:rgba(255,255,255,.55);">until first exam</div>
+            <div style="font-size:.88rem;font-weight:700;color:#ffd700;">29 March 2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right ring + stats -->
+      <div class="col-lg-5 text-center">
+        <div class="pct-ring mb-4 anim-ring">
+          <span class="num">75%</span>
+          <span class="label">Scholarship</span>
+        </div>
+
+        <div class="row g-3 justify-content-center anim-stats">
+          <div class="col-4 stat-item">
+            <span class="stat-num" style="animation-delay:1.2s;">40+</span>
+            <div class="stat-lbl">Years Legacy</div>
+          </div>
+          <div class="col-4 stat-item">
+            <span class="stat-num" style="animation-delay:1.35s;">33rd</span>
+            <div class="stat-lbl">Edition</div>
+          </div>
+          <div class="col-4 stat-item">
+            <span class="stat-num" style="animation-delay:1.5s;">ISO</span>
+            <div class="stat-lbl">9001:2015</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     INFO BAND
+═════════════════════════════════════════════ -->
+<section class="info-band">
+  <div class="container">
+    <div class="row align-items-center text-center text-md-start g-2">
+      <div class="col-md-auto">
+        <i class="fas fa-calendar-check fa-lg" style="color:#c9a800;"></i>
+      </div>
+      <div class="col fw-semibold" style="font-size:.9rem;color:#1a237e;">
+        <strong>Exam Dates: 29 March 2026 (Sunday) &amp; 04 April 2026 (Saturday)</strong>
+        &nbsp;|&nbsp; Slots every 30 min: 7:00 AM – 1:00 PM
+        &nbsp;|&nbsp; Centres: Pammal, Pallavaram, Chrompet
+      </div>
+      <div class="col-md-auto">
+        <a href="/register" class="btn btn-navy btn-sm px-3">Register Free</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     HOW IT WORKS
+═════════════════════════════════════════════ -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="text-center mb-5 reveal">
+      <h2 class="fw-bold" style="color:#1a237e;">How It Works</h2>
+      <p class="text-muted">Simple steps to win your scholarship</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% for icon, title, desc in [
+        ('fa-user-plus',     'Register Online',  'Fill the form with your name, mobile and preferred centre. Free to register.'),
+        ('fa-id-card',       'Get Admit Card',   'Enter your mobile number to view and download your personalised Hall Ticket.'),
+        ('fa-pen-to-square', 'Write the Exam',   'Visit your exam centre on the chosen date and attempt the SAT.'),
+        ('fa-graduation-cap','Win Scholarship',  'Score well and win up to 75% scholarship on CSC computer courses.')
+      ] %}
+      <div class="col-sm-6 col-lg-3 reveal reveal-delay-{{ loop.index }}">
+        <div class="step-card h-100">
+          <div class="step-num">{{ loop.index }}</div>
+          <div class="step-icon"><i class="fas {{ icon }}"></i></div>
+          <h5 class="fw-bold mb-2">{{ title }}</h5>
+          <p class="text-muted small mb-0">{{ desc }}</p>
         </div>
       </div>
       {% endfor %}
-      {% if not by_centre %}
-      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
-      {% endif %}
     </div>
   </div>
+</section>
 
-  <!-- By Gender -->
-  <div class="col-md-4">
-    <div class="chart-card">
-      <h6><i class="fas fa-venus-mars me-1" style="color:var(--red)"></i>By Gender</h6>
-      {% for g in by_gender %}
-      <div class="progress-item">
-        <div class="pi-label">
-          <span class="name">{{ g.gender }}</span>
-          <span class="count">{{ g.cnt }}</span>
-        </div>
-        <div class="progress">
-          <div class="progress-bar {% if g.gender == 'Male' %}bg-primary{% else %}" style="background:#c2185b!important;{% endif %}width:{% if total > 0 %}{{ (g.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
+<!-- ════════════════════════════════════════════
+     EXAM DETAILS
+═════════════════════════════════════════════ -->
+<section class="py-5" style="background:#f0f2f8;">
+  <div class="container">
+    <div class="text-center mb-5 reveal">
+      <h2 class="fw-bold" style="color:#1a237e;">Exam Details</h2>
+      <p class="text-muted">Everything you need to know</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+      {% for icon, label, val in [
+        ('fa-calendar-alt',  'Exam Dates',  '29 Mar 2026 &amp; 04 Apr 2026'),
+        ('fa-clock',         'Time Slots',  '7:00 AM – 1:00 PM (every 30 min)'),
+        ('fa-map-marker-alt','Centres',     'Pammal · Pallavaram · Chrompet'),
+        ('fa-file-alt',      'Syllabus',    'Aptitude, Reasoning, Basic Computer'),
+      ] %}
+      <div class="col-sm-6 col-lg-3 reveal reveal-delay-{{ loop.index }}">
+        <div class="exam-card h-100">
+          <div class="exam-card-icon"><i class="fas {{ icon }}"></i></div>
+          <div class="exam-card-label">{{ label }}</div>
+          <div class="exam-card-val">{{ val }}</div>
         </div>
       </div>
       {% endfor %}
-      {% if not by_gender %}
-      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
-      {% endif %}
+    </div>
+
+    <div class="text-center mt-5 reveal d-flex justify-content-center gap-3 flex-wrap">
+      <a href="/register" class="btn btn-navy btn-lg px-5 fw-bold">
+        <i class="fas fa-user-plus me-2"></i>Register Now
+      </a>
+      <a href="/check" class="btn btn-yellow btn-lg px-5">
+        <i class="fas fa-download me-2"></i>Download Admit Card
+      </a>
     </div>
   </div>
+</section>
 
-  <!-- By Date -->
-  <div class="col-md-4">
-    <div class="chart-card">
-      <h6><i class="fas fa-calendar me-1" style="color:var(--red)"></i>By Exam Date</h6>
-      {% for d in by_date %}
-      <div class="progress-item">
-        <div class="pi-label">
-          <span class="name" style="font-size:11px;">{{ d.exam_date[:20] }}...</span>
-          <span class="count">{{ d.cnt }}</span>
-        </div>
-        <div class="progress">
-          <div class="progress-bar" style="background:var(--navy);width:{% if total > 0 %}{{ (d.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
-        </div>
-      </div>
-      {% endfor %}
-      {% if not by_date %}
-      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
-      {% endif %}
-    </div>
-  </div>
-</div>
+{% endblock %}
 
-<!-- RECENT REGISTRATIONS -->
-<div class="chart-card">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h6 class="mb-0"><i class="fas fa-clock me-1" style="color:var(--red)"></i>Recent Registrations</h6>
-    <a href="{{ url_for('admin_students') }}" class="btn btn-sm" style="background:var(--navy);color:#fff;border-radius:8px;font-size:12px;padding:5px 14px;">
-      View All <i class="fas fa-arrow-right ms-1"></i>
-    </a>
-  </div>
-  <div class="table-responsive">
-    <table class="table sat-table mb-0">
-      <thead>
-        <tr>
-          <th>Hall Ticket</th>
-          <th>Name</th>
-          <th>Gender</th>
-          <th>Mobile</th>
-          <th>Centre</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in recent %}
-        <tr>
-          <td><span style="font-weight:700;color:var(--red);">{{ s.admit_card_no }}</span></td>
-          <td style="font-weight:600;">{{ s.name }}</td>
-          <td>
-            <span class="{% if s.gender == 'Male' %}badge-male{% else %}badge-female{% endif %}">{{ s.gender }}</span>
-          </td>
-          <td style="font-family:monospace;">{{ s.mobile }}</td>
-          <td><span class="badge-centre">{{ s.exam_centre }}</span></td>
-          <td style="font-size:12px;">{{ s.exam_date }}</td>
-          <td style="font-size:12px;">{{ s.exam_time }}</td>
-          <td>
-            <a href="{{ url_for('admin_download_admit', reg_id=s.id) }}" class="btn btn-sm" style="background:#e8eaf6;color:var(--navy);border-radius:6px;font-size:11px;padding:4px 10px;">
-              <i class="fas fa-download"></i>
-            </a>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="8" class="text-center text-muted py-4" style="font-size:14px;">
-            <i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>No registrations yet
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+{% block extra_js %}
+<script>
+/* ── Particles ──────────────────────────────── */
+(function () {
+  const container = document.getElementById('particles');
+  if (!container) return;
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 2 + Math.random() * 4;
+    p.style.cssText = [
+      `left:${Math.random() * 100}%`,
+      `width:${size}px`,
+      `height:${size}px`,
+      `animation-duration:${7 + Math.random() * 12}s`,
+      `animation-delay:${-Math.random() * 16}s`,
+      `opacity:${.25 + Math.random() * .5}`,
+    ].join(';');
+    container.appendChild(p);
+  }
+})();
+
+/* ── Live countdown ─────────────────────────── */
+(function () {
+  const target = new Date('2026-03-29T07:00:00').getTime();
+  const els = {
+    d: document.getElementById('cd-d'),
+    h: document.getElementById('cd-h'),
+    m: document.getElementById('cd-m'),
+    s: document.getElementById('cd-s'),
+  };
+  function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
+  function tick() {
+    const diff = Math.max(0, target - Date.now());
+    els.d.textContent = pad(diff / 86400000);
+    els.h.textContent = pad((diff % 86400000) / 3600000);
+    els.m.textContent = pad((diff % 3600000) / 60000);
+    els.s.textContent = pad((diff % 60000) / 1000);
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+/* ── Scroll reveal ──────────────────────────── */
+(function () {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    },
+    { threshold: 0.12 }
+  );
+  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+})();
+</script>
 {% endblock %}

@@ -6,13 +6,16 @@ from datetime import datetime
 from functools import wraps
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from reportlab.lib.pagesizes import landscape, A5, A4
+from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
+from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib import colors
 from reportlab.lib.units import mm
-from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
+
+# Allow large TIF files
+PngImagePlugin.MAX_TEXT_CHUNK = 100 * (1024 ** 2)
 
 # ─────────────────────────────────────────────────────────────
 # APP
@@ -21,9 +24,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "sat2026_csc_secret_xK9mP3nQ")
 
 # ─────────────────────────────────────────────────────────────
-# DATABASE CONFIG
-# Reads from environment variables (Render + Railway)
-# Falls back to local MySQL for development
+# DB CONFIG — reads env vars (Render+Railway) or falls back local
 # ─────────────────────────────────────────────────────────────
 DB_CONFIG = {
     'host':     os.getenv("MYSQLHOST",     "127.0.0.1"),
@@ -34,26 +35,18 @@ DB_CONFIG = {
     'charset':  'utf8mb4',
 }
 
-# ─────────────────────────────────────────────────────────────
-# ADMIN CREDENTIALS
-# ─────────────────────────────────────────────────────────────
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "sat@admin2026")
 
-# ─────────────────────────────────────────────────────────────
-# EXAM CONFIG
-# ─────────────────────────────────────────────────────────────
 CENTRES = {
     'Pammal':     'pmld',
     'Pallavaram': 'pvmd',
     'Chrompet':   'chrd',
 }
-
 EXAM_DATES = [
     '29 March 2026 (Sunday)',
     '04 April 2026 (Saturday)',
 ]
-
 TIMINGS = [
     '7:00 AM',  '7:30 AM',
     '8:00 AM',  '8:30 AM',
@@ -64,15 +57,16 @@ TIMINGS = [
     '1:00 PM',
 ]
 
+BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_PATH = os.path.join(BASE_DIR, 'static', 'images', 'admit_template.tif')
+
 # ─────────────────────────────────────────────────────────────
-# DATABASE HELPERS
+# DB HELPERS
 # ─────────────────────────────────────────────────────────────
 def get_db():
     return mysql.connector.connect(**DB_CONFIG)
 
-
 def init_db():
-    """Create table if it doesn't exist."""
     conn = get_db()
     cur  = conn.cursor()
     cur.execute("""
@@ -92,35 +86,23 @@ def init_db():
             INDEX idx_centre (exam_centre)
         )
     """)
-    conn.commit()
-    cur.close()
-    conn.close()
+    conn.commit(); cur.close(); conn.close()
     print("✅ Database table ready.")
 
-
 def generate_admit_no(centre):
-    """Generate hall ticket: prefix + zero-padded serial per centre."""
     prefix = CENTRES.get(centre, 'sat')
-    conn   = get_db()
-    cur    = conn.cursor()
-    cur.execute(
-        "SELECT COUNT(*) FROM registrations WHERE exam_centre=%s", (centre,)
-    )
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM registrations WHERE exam_centre=%s", (centre,))
     count = cur.fetchone()[0]
-    cur.close()
-    conn.close()
+    cur.close(); conn.close()
     return f"{prefix}{count + 1:03d}"
 
-
-# ─────────────────────────────────────────────────────────────
-# AUTO-CREATE TABLE ON STARTUP
-# ─────────────────────────────────────────────────────────────
+# Auto-create table on startup
 with app.app_context():
     try:
         init_db()
     except Exception as e:
-        print(f"⚠️  DB init warning: {e}")
-
+        print(f"⚠️  DB init: {e}")
 
 # ─────────────────────────────────────────────────────────────
 # AUTH
@@ -133,203 +115,105 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
+# ─────────────────────────────────────────────────────────────
+# FONT LOADER
+# ─────────────────────────────────────────────────────────────
+def get_font(size):
+    paths = [
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+        'C:/Windows/Fonts/arialbd.ttf',
+        os.path.join(BASE_DIR, 'static', 'fonts', 'DejaVuSans-Bold.ttf'),
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, size)
+            except Exception:
+                continue
+    return ImageFont.load_default()
 
 # ─────────────────────────────────────────────────────────────
-# PDF ADMIT CARD — pixel-perfect CSC SAT 2026 design
+# ADMIT CARD PDF — overlay on TIF image
 # ─────────────────────────────────────────────────────────────
 def build_admit_pdf(s):
     """
-    Generates the CSC SAT 2026 admit card as a PDF.
-    Landscape A5 with:
-      Left  — Red panel: SAT badge, 75% box, Tamil text, CSC logo
-      Right — Cream panel: ADMIT CARD title, 7 boxes for hall ticket,
-              Sex checkboxes, Time, Name underline, Centre, Calendar
+    Opens the TIF template image and overlays student data using PIL.
+    Image size: 1772 x 827 px
+
+    Calibrated pixel positions (from pixel scanning):
+      Admit No boxes  : centers x=[1048,1135,1222,1309,1396,1483], y=219
+      7th char        : x=1542, y=193
+      Sex tick (M)    : center (815, 325)
+      Sex tick (F)    : center (905, 325)
+      Time value      : x=910, y=303
+      Name value      : x=840, y=455 (after "Name :" label, row y=453)
+      Centre value    : x=920, y=545 (after "Centre Address :", row y=542)
     """
-    buf  = io.BytesIO()
-    W, H = landscape(A5)
-    c    = pdfcanvas.Canvas(buf, pagesize=(W, H))
+    buf = io.BytesIO()
 
-    RED        = colors.HexColor('#FF0000')
-    CREAM      = colors.HexColor('#FCFDCD')
-    NAVY       = colors.HexColor('#0000FF')
-    DARK_NAVY  = colors.HexColor('#0808A6')
-    YELLOW     = colors.HexColor('#E4FF00')
-    WHITE      = colors.white
-    GOLD       = colors.HexColor('#C8A050')
-    GREEN_BORD = colors.HexColor('#A8D898')
+    # Load template
+    template = Image.open(TEMPLATE_PATH).convert('RGB')
+    draw     = ImageDraw.Draw(template)
+    NAVY     = (0, 0, 180)
 
-    LP = 58 * mm    # left panel width
-    BR = 13 * mm    # border strip width each side
+    # Fonts
+    f_box  = get_font(48)   # admit no boxes
+    f_val  = get_font(46)   # field values
+    f_tick = get_font(44)   # tick symbol
 
-    # Cream background
-    c.setFillColor(CREAM)
-    c.rect(0, 0, W, H, fill=1, stroke=0)
-
-    # Decorative border strips
-    def draw_border(x, sw, h):
-        c.setFillColor(GOLD);      c.rect(x, 0, sw, h, fill=1, stroke=0)
-        c.setFillColor(CREAM);     c.rect(x+2, 2, sw-4, h-4, fill=1, stroke=0)
-        c.setFillColor(GREEN_BORD);c.rect(x+4, 4, sw-8, h-8, fill=1, stroke=0)
-        c.setFillColor(CREAM);     c.rect(x+7, 7, sw-14, h-14, fill=1, stroke=0)
-        cx = x + sw/2
-        c.setFillColor(GOLD)
-        for yp in range(10, int(h), 10):
-            p = c.beginPath()
-            p.moveTo(cx, yp+4); p.lineTo(cx+4, yp)
-            p.lineTo(cx, yp-4); p.lineTo(cx-4, yp); p.close()
-            c.drawPath(p, fill=1, stroke=0)
-        c.setFillColor(GREEN_BORD)
-        for yp in range(5, int(h), 10):
-            c.circle(cx, yp, 1.5, fill=1, stroke=0)
-
-    draw_border(0, BR, H)
-    draw_border(W - BR, BR, H)
-
-    # Left red panel
-    c.setFillColor(RED)
-    c.rect(BR, 0, LP - BR, H, fill=1, stroke=0)
-    mid = BR + (LP - BR) / 2
-
-    # SAT 2026 badge
-    bx = BR+6; by = H-52; bw = LP-BR-12; bh = 40
-    c.setFillColor(DARK_NAVY); c.roundRect(bx, by, bw, bh, 10, fill=1, stroke=0)
-    c.setStrokeColor(YELLOW); c.setLineWidth(2.5)
-    c.ellipse(bx+4, by+4, bx+bw-4, by+bh-4, fill=0, stroke=1)
-    c.setFillColor(YELLOW); c.setFont('Helvetica-Bold', 14)
-    c.drawCentredString(mid, by+bh-15, 'SAT 2026')
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 5.5)
-    c.drawCentredString(mid, by+5, '33rd Scholarship Aptitude Test')
-
-    # Win up to 75% box
-    wx = BR+5; wy = H-148; ww = LP-BR-10; wh = 90
-    c.setFillColor(DARK_NAVY); c.roundRect(wx, wy, ww, wh, 8, fill=1, stroke=0)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 10)
-    c.drawCentredString(mid, wy+wh-14, 'Win up to')
-    c.setFillColor(YELLOW); c.setFont('Helvetica-Bold', 46)
-    c.drawCentredString(mid, wy+wh-60, '75%')
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 14)
-    c.drawCentredString(mid, wy+8, 'Scholarship')
-
-    # Tamil text
-    c.setFillColor(DARK_NAVY); c.setFont('Helvetica-Bold', 7)
-    c.drawCentredString(mid, H-162, 'anumadhi ilavasam !')
-    c.drawCentredString(mid, H-173, 'anaivarium varuga !!')
-
-    # CSC circle logo
-    cy0 = 34
-    c.setFillColor(DARK_NAVY); c.circle(mid, cy0, 28, fill=1, stroke=0)
-    c.setStrokeColor(YELLOW); c.setLineWidth(2.5)
-    c.circle(mid, cy0, 28, fill=0, stroke=1)
-    c.setFillColor(YELLOW); c.setFont('Helvetica-BoldOblique', 26)
-    c.drawCentredString(mid, cy0-9, 'CSC')
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 4.5)
-    c.drawCentredString(mid, cy0-19, 'COMPUTER SOFTWARE COLLEGE')
-    c.drawCentredString(mid, cy0-25, 'An ISO 9001 : 2015 Certified Institution')
-
-    # Right cream panel
-    rx = LP + 10
-    rc = LP + (W - BR - LP) / 2
-
-    # ADMIT CARD title
-    c.setFillColor(RED); c.setFont('Helvetica-Bold', 38)
-    c.drawCentredString(rc, H-40, 'ADMIT CARD')
-
-    # Admit Card No — 7 boxes (e.g. pmld001)
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, H-102, 'Admit Card No:')
-    bx0 = rx+80; bry = H-125; bw2 = 28; bh2 = 30; bgap = 3
     admit_no = str(s.get('admit_card_no', ''))
-    for i in range(7):
-        xi = bx0 + i*(bw2+bgap)
-        c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
-        c.rect(xi, bry, bw2, bh2, fill=1, stroke=1)
-        if i < len(admit_no):
-            c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-            c.drawCentredString(xi+bw2/2, bry+9, admit_no[i].upper())
-
-    # Sex + Time row
-    sy = H-177; ms = 15
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, sy, 'Sex:')
-    mx = rx+32; my = sy-11
-    c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
-    c.rect(mx, my, ms, ms, fill=1, stroke=1)
-    if s.get('gender') == 'Male':
-        c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 10)
-        c.drawCentredString(mx+ms/2, my+3, 'X')
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(mx+ms+4, sy, 'M')
-    fx = mx+ms+22
-    c.setFillColor(CREAM); c.setStrokeColor(NAVY); c.setLineWidth(1.5)
-    c.rect(fx, my, ms, ms, fill=1, stroke=1)
-    if s.get('gender') == 'Female':
-        c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 10)
-        c.drawCentredString(fx+ms/2, my+3, 'X')
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(fx+ms+4, sy, 'F')
-    tlx = fx+ms+30
-    c.drawString(tlx, sy, 'Time:')
-    tvx = tlx+38
+    name     = str(s.get('name', '')).upper()
+    gender   = str(s.get('gender', ''))
     time_val = str(s.get('exam_time', ''))
-    c.drawString(tvx, sy, time_val)
-    c.setStrokeColor(NAVY); c.setLineWidth(1.2)
-    c.line(tvx, sy-3, tvx+72, sy-3)
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(tvx+74, sy, 'am./pm.')
+    centre   = str(s.get('exam_centre', '')).upper()
 
-    # Name row
-    ny = H-210
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, ny, 'Name :')
-    c.drawString(rx+50, ny, str(s.get('name', '')).upper())
-    c.setStrokeColor(NAVY); c.setLineWidth(1.2)
-    c.line(rx+48, ny-3, W-BR-14, ny-3)
+    # ── 1. Admit Card No — 6 chars in boxes, overflow outside ────
+    box_cx = [1048, 1135, 1222, 1309, 1396, 1483]
+    box_cy = 219
+    for i, ch in enumerate(admit_no[:6]):
+        bb = draw.textbbox((0, 0), ch.upper(), font=f_box)
+        tw, th = bb[2]-bb[0], bb[3]-bb[1]
+        draw.text((box_cx[i] - tw//2, box_cy - th//2), ch.upper(),
+                  fill=NAVY, font=f_box)
+    # Characters beyond 6 printed right after last box
+    for j, ch in enumerate(admit_no[6:]):
+        draw.text((1542 + j*52, 193), ch.upper(), fill=NAVY, font=f_box)
 
-    # Centre Address row
-    cay = H-243
-    c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
-    c.drawString(rx, cay, 'Centre Address :')
-    c.drawString(rx+104, cay, str(s.get('exam_centre', '')).upper())
-
-    # Desk calendar
-    exam_date_str = str(s.get('exam_date', ''))
-    if 'April' in exam_date_str:
-        cal_month, cal_day, cal_day_name = 'APRIL', '4', 'SATURDAY'
+    # ── 2. Sex — tick ✓ in correct checkbox ─────────────────────
+    tick = "\u2713"
+    bb   = draw.textbbox((0, 0), tick, font=f_tick)
+    tw, th = bb[2]-bb[0], bb[3]-bb[1]
+    if gender == 'Male':
+        cx, cy = 815, 325
     else:
-        cal_month, cal_day, cal_day_name = 'MARCH', '29', 'SUNDAY'
+        cx, cy = 905, 325
+    draw.text((cx - tw//2, cy - th//2), tick, fill=NAVY, font=f_tick)
 
-    clx = LP+12; cly = H-344; clw = 68; clh = 90
-    c.setFillColor(colors.HexColor('#999999'))
-    c.roundRect(clx+3, cly-3, clw, clh, 4, fill=1, stroke=0)
-    c.setFillColor(DARK_NAVY)
-    c.roundRect(clx, cly, clw, clh, 4, fill=1, stroke=0)
-    th = 22
-    c.setFillColor(RED)
-    c.roundRect(clx, cly+clh-th, clw, th, 4, fill=1, stroke=0)
-    c.rect(clx, cly+clh-th, clw, th/2, fill=1, stroke=0)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 7)
-    c.drawCentredString(clx+clw/2, cly+clh-10, 'EXAM DATE')
-    c.setFillColor(YELLOW); c.setFont('Helvetica-Bold', 14)
-    c.drawCentredString(clx+clw/2, cly+clh-38, cal_month)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 36)
-    c.drawCentredString(clx+clw/2, cly+clh-72, cal_day)
-    c.setFillColor(RED)
-    c.roundRect(clx+5, cly+3, clw-10, 14, 3, fill=1, stroke=0)
-    c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 7)
-    c.drawCentredString(clx+clw/2, cly+6, cal_day_name)
+    # ── 3. Time value ────────────────────────────────────────────
+    bb = draw.textbbox((0, 0), time_val, font=f_val)
+    th = bb[3] - bb[1]
+    draw.text((968, 325 - th//2), time_val, fill=NAVY, font=f_val)
 
-    # Examiner
-    c.setFillColor(RED); c.setFont('Helvetica-Bold', 11)
-    c.drawString(W-BR-58, H-386, 'Examiner')
+    # ── 4. Name value (after "Name :" label, row y≈453) ──────────
+    bb = draw.textbbox((0, 0), name, font=f_val)
+    th = bb[3] - bb[1]
+    draw.text((840, 453 - th//2), name, fill=NAVY, font=f_val)
 
-    c.save()
+    # ── 5. Centre Address value (after label, row y≈543) ─────────
+    bb = draw.textbbox((0, 0), centre, font=f_val)
+    th = bb[3] - bb[1]
+    draw.text((1030, 543 - th//2), centre, fill=NAVY, font=f_val)
+
+    # ── Convert to PDF ───────────────────────────────────────────
+    template.save(buf, format='PDF', resolution=150)
     buf.seek(0)
     return buf
 
 
-# ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
 # PUBLIC ROUTES
-# ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -368,7 +252,7 @@ def register():
             """, (admit_no, name, gender, mobile, centre, date, time))
             conn.commit(); cur.close(); conn.close()
             flash(f'Registration successful! Hall Ticket No: <strong>{admit_no}</strong>. '
-                  f'Enter your mobile to download admit card.', 'success')
+                  f'Enter your mobile to download your admit card.', 'success')
             return redirect(url_for('check_admit'))
         except Exception as e:
             flash(f'Registration failed: {str(e)}', 'danger')
@@ -391,8 +275,7 @@ def check_admit():
                 cur.execute(
                     "SELECT * FROM registrations WHERE mobile=%s AND is_active=1 "
                     "ORDER BY registered_at DESC", (mobile,))
-                students = cur.fetchall()
-                cur.close(); conn.close()
+                students = cur.fetchall(); cur.close(); conn.close()
                 if not students:
                     error = 'No registration found for this mobile number.'
                 elif len(students) == 1:
@@ -413,18 +296,18 @@ def download_admit(reg_id):
         if not s:
             flash('Record not found.', 'danger')
             return redirect(url_for('check_admit'))
-        buf = build_admit_pdf(s)
+        buf   = build_admit_pdf(s)
+        fname = f"AdmitCard_{s['admit_card_no']}.pdf"
         return send_file(buf, as_attachment=True,
-                         download_name=f"AdmitCard_{s['admit_card_no']}.pdf",
-                         mimetype='application/pdf')
+                         download_name=fname, mimetype='application/pdf')
     except Exception as e:
-        flash(f'Error: {str(e)}', 'danger')
+        flash(f'Error generating admit card: {str(e)}', 'danger')
         return redirect(url_for('check_admit'))
 
 
-# ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
 # ADMIN ROUTES
-# ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -456,8 +339,7 @@ def admin_dashboard():
         cur.execute("SELECT exam_date, COUNT(*) AS cnt FROM registrations GROUP BY exam_date")
         by_date = cur.fetchall()
         cur.execute("SELECT * FROM registrations ORDER BY registered_at DESC LIMIT 10")
-        recent = cur.fetchall()
-        cur.close(); conn.close()
+        recent = cur.fetchall(); cur.close(); conn.close()
         return render_template('admin_dashboard.html', total=total,
                                by_centre=by_centre, by_gender=by_gender,
                                by_date=by_date, recent=recent)
@@ -492,8 +374,7 @@ def admin_students():
             f"SELECT * FROM registrations {wsql} "
             f"ORDER BY registered_at DESC LIMIT %s OFFSET %s",
             params + [per, (page-1)*per])
-        students = cur.fetchall()
-        cur.close(); conn.close()
+        students = cur.fetchall(); cur.close(); conn.close()
         return render_template('admin_students.html', students=students,
                                search=search, centre=centre, date=date,
                                gender=gender, page=page,
@@ -616,8 +497,7 @@ def download_pdf_list():
             ('TOPPADDING',(0,0),(-1,-1),4),
             ('BOTTOMPADDING',(0,0),(-1,-1),4),
         ]))
-        elems.append(t)
-        doc.build(elems); buf.seek(0)
+        elems.append(t); doc.build(elems); buf.seek(0)
         fname = f"SAT2026_List_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         return send_file(buf, as_attachment=True, download_name=fname,
                          mimetype='application/pdf')
