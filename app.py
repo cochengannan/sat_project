@@ -95,7 +95,7 @@ def generate_admit_no(centre):
     cur.execute("SELECT COUNT(*) FROM registrations WHERE exam_centre=%s", (centre,))
     count = cur.fetchone()[0]
     cur.close(); conn.close()
-    return f"{prefix}{count + 1:03d}"
+    return f"{prefix}{900 + count + 1}"
 
 # Auto-create table on startup
 with app.app_context():
@@ -185,15 +185,15 @@ def build_admit_pdf(s):
     bb   = draw.textbbox((0, 0), tick, font=f_tick)
     tw, th = bb[2]-bb[0], bb[3]-bb[1]
     if gender == 'Male':
-        cx, cy = 815, 325
+        cx, cy = 817, 354
     else:
-        cx, cy = 905, 325
+        cx, cy = 932, 354
     draw.text((cx - tw//2, cy - th//2), tick, fill=NAVY, font=f_tick)
 
     # ── 3. Time value ────────────────────────────────────────────
     bb = draw.textbbox((0, 0), time_val, font=f_val)
     th = bb[3] - bb[1]
-    draw.text((968, 325 - th//2), time_val, fill=NAVY, font=f_val)
+    draw.text((1172, 354 - th//2), time_val, fill=NAVY, font=f_val)
 
     # ── 4. Name value (after "Name :" label, row y≈453) ──────────
     bb = draw.textbbox((0, 0), name, font=f_val)
