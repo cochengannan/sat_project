@@ -1,6 +1,312 @@
-flask==3.0.0
-mysql-connector-python==8.2.0
-openpyxl==3.1.2
-reportlab==4.1.0
-Werkzeug==3.0.1
-gunicorn==21.2.0
+{% extends 'base.html' %}
+{% block title %}CSC SAT 2026 — Home{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hero-section {
+    background: linear-gradient(135deg, var(--navy) 0%, #0d1257 40%, var(--red-dark) 100%);
+    color: #fff;
+    padding: 60px 0 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: rgba(249,168,37,0.08);
+  }
+  .hero-section::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: -60px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .hero-title { font-size: 42px; font-weight: 900; line-height: 1.1; }
+  .hero-title span { color: var(--gold); }
+  .hero-sub { font-size: 16px; opacity: 0.85; margin-top: 12px; max-width: 500px; }
+  .hero-actions { margin-top: 28px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero-badge-box {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-top: 20px;
+  }
+  .hero-badge-box .pct { font-size: 72px; font-weight: 900; color: var(--gold); line-height: 1; font-family: 'Rajdhani', sans-serif; }
+  .stat-chips { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+  .stat-chip {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 30px;
+    padding: 6px 16px;
+    font-size: 12.5px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .stat-chip i { color: var(--gold); }
+
+  /* Info cards */
+  .info-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 28px 24px;
+    height: 100%;
+    transition: transform 0.2s;
+    border-top: 4px solid var(--red);
+  }
+  .info-card:hover { transform: translateY(-4px); }
+  .info-card .ic-icon {
+    width: 54px; height: 54px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 22px; margin-bottom: 16px;
+  }
+  .info-card h5 { font-weight: 700; color: var(--navy); font-size: 16px; margin-bottom: 10px; }
+  .info-card p { font-size: 13.5px; color: #666; line-height: 1.7; margin: 0; }
+
+  /* Steps */
+  .steps-section { padding: 50px 0; background: #fff; }
+  .step-item { display: flex; gap: 18px; margin-bottom: 28px; }
+  .step-num {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+    color: #fff; font-weight: 800; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-body h6 { font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .step-body p { font-size: 13px; color: #666; margin: 0; }
+
+  /* Dates section */
+  .dates-section { padding: 50px 0; }
+  .date-card {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .date-card::before {
+    content: '';
+    position: absolute; top: -20px; right: -20px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .date-card .dc-month { color: var(--gold); font-weight: 700; font-size: 13px; letter-spacing: 2px; }
+  .date-card .dc-day { font-size: 60px; font-weight: 900; line-height: 1; font-family: 'Rajdhani', sans-serif; }
+  .date-card .dc-year { color: rgba(255,255,255,0.7); font-size: 15px; }
+  .date-card .dc-dow {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 16px;
+    border-radius: 20px;
+    margin-top: 10px;
+    letter-spacing: 1px;
+  }
+  .centre-chip {
+    background: #fff;
+    border: 2px solid #e8eaf6;
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 600; color: var(--navy);
+    font-size: 14px;
+  }
+  .centre-chip i { color: var(--red); font-size: 18px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero-section">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span style="background:var(--gold);color:var(--navy);font-weight:800;font-size:11px;padding:4px 12px;border-radius:20px;letter-spacing:1px;">33rd ANNUAL</span>
+          <span style="background:rgba(255,255,255,0.15);color:#fff;font-size:11px;padding:4px 12px;border-radius:20px;">2026</span>
+        </div>
+        <h1 class="hero-title">
+          CSC Scholarship<br>
+          <span>Aptitude Test</span><br>
+          2026
+        </h1>
+        <p class="hero-sub">Register now for the 33rd Annual SAT and win up to 75% scholarship at Computer Software College. Open for all Class 10 passed students.</p>
+        <div class="hero-actions">
+          <a href="{{ url_for('register') }}" class="btn btn-sat-primary btn-lg">
+            <i class="fas fa-user-plus me-2"></i>Register Now
+          </a>
+          <a href="{{ url_for('check_admit') }}" class="btn btn-sat-secondary btn-lg">
+            <i class="fas fa-id-card me-2"></i>Get Admit Card
+          </a>
+        </div>
+        <div class="stat-chips">
+          <div class="stat-chip"><i class="fas fa-calendar-alt"></i>29 Mar & 04 Apr 2026</div>
+          <div class="stat-chip"><i class="fas fa-map-marker-alt"></i>3 Centres</div>
+          <div class="stat-chip"><i class="fas fa-certificate"></i>ISO 9001:2015</div>
+        </div>
+      </div>
+      <div class="col-lg-4 offset-lg-1 mt-4 mt-lg-0">
+        <div class="hero-badge-box">
+          <div style="font-size:13px;opacity:0.7;font-weight:500;">WIN UP TO</div>
+          <div class="pct">75%</div>
+          <div style="font-size:18px;font-weight:800;color:#fff;">Scholarship</div>
+          <div style="font-size:11px;color:var(--gold);margin-top:6px;">அனுமதி இலவசம்! அனைவரும் வருக!!</div>
+          <hr style="border-color:rgba(255,255,255,0.15);margin:14px 0;">
+          <div style="font-size:12px;opacity:0.65;">Free admission up to 75% for qualifying students in CSC programs.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INFO CARDS -->
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-4">
+      <h2 style="font-weight:800;color:var(--navy);">About CSC SAT 2026</h2>
+      <p style="color:#777;max-width:550px;margin:8px auto 0;font-size:14px;">Everything you need to know about the scholarship aptitude test</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="info-card">
+          <div class="ic-icon"><i class="fas fa-graduation-cap"></i></div>
+          <h5>Scholarship Benefits</h5>
+          <p>Qualifying students receive up to 75% fee concession across all CSC courses. The scholarship is awarded based on merit and performance in the SAT exam.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="info-card">
+          <div class="ic-icon"><i class="fas fa-users"></i></div>
+          <h5>Who Can Apply?</h5>
+          <p>Any student who has passed Class 10 (SSLC) is eligible to appear for the SAT 2026. No application fee. Registration is completely free.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="info-card">
+          <div class="ic-icon"><i class="fas fa-file-alt"></i></div>
+          <h5>Exam Pattern</h5>
+          <p>The test covers General Aptitude, Basic Mathematics, and Logical Reasoning. Duration: 90 minutes. Medium: Tamil & English.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="steps-section">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-6">
+        <h3 style="font-weight:800;color:var(--navy);margin-bottom:28px;"><i class="fas fa-list-check me-2" style="color:var(--red)"></i>How to Register</h3>
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h6>Fill Registration Form</h6>
+            <p>Enter your name, gender, mobile number and choose your preferred exam centre, date and time slot.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h6>Submit Registration</h6>
+            <p>Click Submit. Your Hall Ticket number will be generated instantly upon successful registration.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h6>Download Admit Card</h6>
+            <p>Visit the "Admit Card" page, enter your registered mobile number to view and download your PDF admit card.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h6>Appear for the Exam</h6>
+            <p>Carry a printed copy of your admit card to the exam centre on the chosen date and time.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5 offset-lg-1 mt-4 mt-lg-0">
+        <h3 style="font-weight:800;color:var(--navy);margin-bottom:28px;"><i class="fas fa-map-marker-alt me-2" style="color:var(--red)"></i>Exam Centres</h3>
+        <div class="d-flex flex-column gap-3 mb-4">
+          <div class="centre-chip">
+            <i class="fas fa-school"></i>
+            <div>
+              <div>Pammal Centre</div>
+              <div style="font-size:11px;font-weight:400;color:#888;">Code: PMLD</div>
+            </div>
+          </div>
+          <div class="centre-chip">
+            <i class="fas fa-school"></i>
+            <div>
+              <div>Pallavaram Centre</div>
+              <div style="font-size:11px;font-weight:400;color:#888;">Code: PVMD</div>
+            </div>
+          </div>
+          <div class="centre-chip">
+            <i class="fas fa-school"></i>
+            <div>
+              <div>Chrompet Centre</div>
+              <div style="font-size:11px;font-weight:400;color:#888;">Code: CHRD</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--cream2);border-radius:12px;padding:16px 20px;border-left:4px solid var(--red);">
+          <div style="font-weight:700;color:var(--navy);font-size:13px;"><i class="fas fa-info-circle me-1" style="color:var(--red)"></i>Important Note</div>
+          <div style="font-size:12.5px;color:#555;margin-top:6px;">Report to the exam centre 30 minutes before your scheduled time. Bring your printed admit card.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXAM DATES -->
+<section class="dates-section" style="background:var(--gray-bg);">
+  <div class="container">
+    <div class="text-center mb-4">
+      <h3 style="font-weight:800;color:var(--navy);">Exam Dates</h3>
+    </div>
+    <div class="row g-4 justify-content-center">
+      <div class="col-sm-6 col-md-4">
+        <div class="date-card">
+          <div class="dc-month">MARCH</div>
+          <div class="dc-day">29</div>
+          <div class="dc-year">2026</div>
+          <div class="dc-dow">SUNDAY</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <div class="date-card">
+          <div class="dc-month">APRIL</div>
+          <div class="dc-day">04</div>
+          <div class="dc-year">2026</div>
+          <div class="dc-dow">SATURDAY</div>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-4">
+      <a href="{{ url_for('register') }}" class="btn btn-sat-primary btn-lg px-5">
+        <i class="fas fa-user-plus me-2"></i>Register for SAT 2026
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,87 +1,153 @@
 {% extends 'admin_base.html' %}
-{% block title %}Students - CSC SAT 2026 Admin{% endblock %}
-{% block page_title %}All Students{% endblock %}
-{% block content %}
-<div class="card mb-4">
-  <div class="card-body py-3">
-    <form method="GET" action="{{ url_for('admin_students') }}" class="row g-2 align-items-end">
-      <div class="col-sm-3">
-        <label class="form-label small fw-semibold mb-1">Search</label>
-        <input type="text" name="q" class="form-control form-control-sm" placeholder="Name / Mobile / Ticket" value="{{ search }}">
-      </div>
-      <div class="col-sm-2">
-        <label class="form-label small fw-semibold mb-1">Centre</label>
-        <select name="centre" class="form-select form-select-sm">
-          <option value="">All</option>
-          {% for c in centres %}<option value="{{ c }}" {{ 'selected' if centre==c else '' }}>{{ c }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="col-sm-3">
-        <label class="form-label small fw-semibold mb-1">Date</label>
-        <select name="date" class="form-select form-select-sm">
-          <option value="">All</option>
-          {% for d in exam_dates %}<option value="{{ d }}" {{ 'selected' if date==d else '' }}>{{ d }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="col-sm-2">
-        <label class="form-label small fw-semibold mb-1">Gender</label>
-        <select name="gender" class="form-select form-select-sm">
-          <option value="">All</option>
-          <option value="Male" {{ 'selected' if gender=='Male' else '' }}>Male</option>
-          <option value="Female" {{ 'selected' if gender=='Female' else '' }}>Female</option>
-        </select>
-      </div>
-      <div class="col-sm-2 d-flex gap-2">
-        <button type="submit" class="btn btn-sm btn-primary flex-fill"><i class="bi bi-funnel"></i> Filter</button>
-        <a href="{{ url_for('admin_students') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x"></i></a>
-      </div>
-    </form>
-  </div>
+{% block title %}All Students — CSC SAT 2026 Admin{% endblock %}
+{% block page_title %}All Registrations{% endblock %}
+
+{% block admin_content %}
+<div class="page-header">
+  <h4><i class="fas fa-users me-2" style="color:var(--red)"></i>All Registrations</h4>
+  <p>{{ total_rows }} total registration(s) found</p>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <span class="text-muted small">Showing <strong>{{ students|length }}</strong> of <strong>{{ total_rows }}</strong></span>
-  <div class="d-flex gap-2">
-    <a href="{{ url_for('download_excel') }}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
-    <a href="{{ url_for('download_pdf_list') }}" class="btn btn-sm btn-danger"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
-  </div>
+<!-- FILTER BAR -->
+<div class="filter-bar mb-3">
+  <form method="GET" action="{{ url_for('admin_students') }}">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">Search</label>
+        <input type="text" class="form-control" name="q" placeholder="Name / Mobile / Hall Ticket"
+          value="{{ search }}" style="font-size:13px;border-radius:8px;border:1.5px solid #ddd;">
+      </div>
+      <div class="col-md-2">
+        <label style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">Centre</label>
+        <select class="form-select" name="centre" style="font-size:13px;border-radius:8px;border:1.5px solid #ddd;">
+          <option value="">All Centres</option>
+          {% for c in centres %}
+          <option value="{{ c }}" {% if centre == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">Date</label>
+        <select class="form-select" name="date" style="font-size:13px;border-radius:8px;border:1.5px solid #ddd;">
+          <option value="">All Dates</option>
+          {% for d in exam_dates %}
+          <option value="{{ d }}" {% if date == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">Gender</label>
+        <select class="form-select" name="gender" style="font-size:13px;border-radius:8px;border:1.5px solid #ddd;">
+          <option value="">All</option>
+          <option value="Male" {% if gender == 'Male' %}selected{% endif %}>Male</option>
+          <option value="Female" {% if gender == 'Female' %}selected{% endif %}>Female</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn w-100" style="background:var(--navy);color:#fff;font-size:13px;font-weight:600;border-radius:8px;">
+          <i class="fas fa-search me-1"></i>Filter
+        </button>
+        <a href="{{ url_for('admin_students') }}" class="btn" style="background:#f0f0f0;color:#555;font-size:13px;border-radius:8px;">
+          <i class="fas fa-times"></i>
+        </a>
+      </div>
+    </div>
+  </form>
 </div>
 
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead style="background:#0d1b6e;color:#fff;">
-        <tr><th>#</th><th>Hall Ticket</th><th>Name</th><th>Gender</th><th>Mobile</th><th>Centre</th><th>Date</th><th>Time</th><th>Registered</th><th>Admit</th></tr>
-      </thead>
-      <tbody>
-        {% set off = (page-1)*20 %}
-        {% for s in students %}
-        <tr>
-          <td class="text-muted small">{{ off+loop.index }}</td>
-          <td class="fw-bold text-danger">{{ s.admit_card_no }}</td>
-          <td>{{ s.name }}</td>
-          <td><span class="badge {{ 'bg-primary' if s.gender=='Male' else 'bg-danger' }}">{{ s.gender }}</span></td>
-          <td>{{ s.mobile }}</td>
-          <td>{{ s.exam_centre }}</td>
-          <td><small>{{ s.exam_date }}</small></td>
-          <td>{{ s.exam_time }}</td>
-          <td class="text-muted small">{% if s.registered_at %}{{ s.registered_at.strftime('%d/%m/%y %H:%M') }}{% endif %}</td>
-          <td><a href="{{ url_for('admin_download_admit', reg_id=s.id) }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-download"></i></a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="10" class="text-center text-muted py-5"><i class="bi bi-search" style="font-size:2rem;"></i><p class="mt-2">No students found.</p></td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% if total_pages > 1 %}
-  <div class="card-footer">
-    <nav><ul class="pagination pagination-sm justify-content-center mb-0">
-      {% if page > 1 %}<li class="page-item"><a class="page-link" href="?q={{ search }}&centre={{ centre }}&date={{ date }}&gender={{ gender }}&page={{ page-1 }}">&laquo;</a></li>{% endif %}
-      {% for p in range(1, total_pages+1) %}<li class="page-item {{ 'active' if p==page else '' }}"><a class="page-link" href="?q={{ search }}&centre={{ centre }}&date={{ date }}&gender={{ gender }}&page={{ p }}">{{ p }}</a></li>{% endfor %}
-      {% if page < total_pages %}<li class="page-item"><a class="page-link" href="?q={{ search }}&centre={{ centre }}&date={{ date }}&gender={{ gender }}&page={{ page+1 }}">&raquo;</a></li>{% endif %}
-    </ul></nav>
-  </div>
-  {% endif %}
+<!-- EXPORT BUTTONS -->
+<div class="d-flex gap-2 mb-3">
+  <a href="{{ url_for('download_excel') }}" class="btn btn-sm" style="background:#217346;color:#fff;font-size:12px;border-radius:8px;padding:6px 14px;">
+    <i class="fas fa-file-excel me-1"></i>Export Excel
+  </a>
+  <a href="{{ url_for('download_pdf_list') }}" class="btn btn-sm" style="background:#B71C1C;color:#fff;font-size:12px;border-radius:8px;padding:6px 14px;">
+    <i class="fas fa-file-pdf me-1"></i>Export PDF
+  </a>
 </div>
+
+<!-- TABLE -->
+<div class="table-responsive sat-table" style="background:#fff;border-radius:14px;">
+  <table class="table mb-0">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Hall Ticket</th>
+        <th>Name</th>
+        <th>Gender</th>
+        <th>Mobile</th>
+        <th>Centre</th>
+        <th>Exam Date</th>
+        <th>Time</th>
+        <th>Registered</th>
+        <th>Admit Card</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set offset = (page - 1) * 20 %}
+      {% for s in students %}
+      <tr>
+        <td style="color:#aaa;font-size:12px;">{{ offset + loop.index }}</td>
+        <td><span style="font-weight:800;color:var(--red);letter-spacing:0.5px;">{{ s.admit_card_no }}</span></td>
+        <td style="font-weight:600;color:var(--navy);">{{ s.name }}</td>
+        <td>
+          <span class="{% if s.gender == 'Male' %}badge-male{% else %}badge-female{% endif %}">
+            <i class="fas fa-{% if s.gender == 'Male' %}mars{% else %}venus{% endif %} me-1"></i>{{ s.gender }}
+          </span>
+        </td>
+        <td style="font-family:monospace;font-size:13px;">{{ s.mobile }}</td>
+        <td><span class="badge-centre">{{ s.exam_centre }}</span></td>
+        <td style="font-size:12px;">{{ s.exam_date }}</td>
+        <td style="font-size:12.5px;font-weight:600;color:var(--navy);">{{ s.exam_time }}</td>
+        <td style="font-size:11px;color:#aaa;">
+          {% if s.registered_at %}{{ s.registered_at.strftime('%d/%m/%y %H:%M') if s.registered_at.strftime is defined else s.registered_at|string|truncate(16, false, '') }}{% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('admin_download_admit', reg_id=s.id) }}" class="btn btn-sm" style="background:var(--navy);color:#fff;border-radius:6px;font-size:11px;padding:4px 12px;" title="Download Admit Card">
+            <i class="fas fa-download me-1"></i>PDF
+          </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="10" class="text-center text-muted py-5">
+          <i class="fas fa-search fa-2x mb-2 d-block opacity-25"></i>
+          No registrations found matching your filters.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- PAGINATION -->
+{% if total_pages > 1 %}
+<div class="d-flex align-items-center justify-content-between mt-3">
+  <div style="font-size:12px;color:#aaa;">
+    Page {{ page }} of {{ total_pages }} &nbsp;|&nbsp; {{ total_rows }} results
+  </div>
+  <nav>
+    <ul class="pagination pagination-sm mb-0">
+      {% if page > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('admin_students', q=search, centre=centre, date=date, gender=gender, page=page-1) }}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+      </li>
+      {% endif %}
+      {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+      <li class="page-item {% if p == page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('admin_students', q=search, centre=centre, date=date, gender=gender, page=p) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      {% if page < total_pages %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('admin_students', q=search, centre=centre, date=date, gender=gender, page=page+1) }}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endif %}
 {% endblock %}

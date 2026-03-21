@@ -1,83 +1,313 @@
 {% extends 'base.html' %}
-{% block title %}Download Admit Card - CSC SAT 2026{% endblock %}
+{% block title %}Admit Card — CSC SAT 2026{% endblock %}
+
+{% block extra_css %}
+<style>
+  .check-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+  .check-card-header {
+    background: linear-gradient(135deg, var(--red-dark) 0%, var(--red) 100%);
+    color: #fff;
+    padding: 24px 28px;
+    text-align: center;
+  }
+  .check-card-header .cc-icon {
+    width: 64px; height: 64px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin: 0 auto 12px;
+  }
+  .check-card-header h3 { font-weight: 800; font-size: 20px; margin: 0; }
+  .check-card-header p { margin: 4px 0 0; opacity: 0.8; font-size: 13px; }
+  .check-card-body { padding: 28px; }
+
+  /* Admit card preview */
+  .admit-card-preview {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    display: flex;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .acp-left {
+    background: linear-gradient(180deg, #D32F2F 0%, #B71C1C 100%);
+    width: 200px;
+    flex-shrink: 0;
+    padding: 20px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    position: relative;
+  }
+  .acp-sat-badge {
+    background: var(--navy);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    padding: 8px 14px;
+    text-align: center;
+    width: 100%;
+  }
+  .acp-sat-badge .sb-main { color: var(--gold); font-weight: 900; font-size: 18px; font-family: 'Rajdhani', sans-serif; }
+  .acp-sat-badge .sb-sub { color: #fff; font-size: 8px; font-weight: 600; opacity: 0.8; }
+  .acp-75-box {
+    background: var(--navy);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+    width: 100%;
+  }
+  .acp-75-box .win { color: #fff; font-size: 10px; opacity: 0.8; }
+  .acp-75-box .pct { color: var(--gold); font-size: 48px; font-weight: 900; font-family: 'Rajdhani', sans-serif; line-height: 1; }
+  .acp-75-box .sch { color: #fff; font-size: 12px; font-weight: 700; }
+  .acp-left .tamil-text { color: var(--cream); font-size: 9px; text-align: center; opacity: 0.8; }
+  .acp-logo-circle {
+    width: 62px; height: 62px;
+    background: var(--navy);
+    border: 2.5px solid var(--gold);
+    border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin-top: auto;
+  }
+  .acp-logo-circle .lc-csc { color: var(--gold); font-weight: 900; font-size: 20px; font-family: 'Rajdhani', sans-serif; line-height: 1; }
+  .acp-logo-circle .lc-sub { color: #fff; font-size: 6px; text-align: center; opacity: 0.7; }
+
+  .acp-right {
+    background: #FFFDE7;
+    flex: 1;
+    padding: 20px 22px;
+  }
+  .acp-title {
+    color: var(--red);
+    font-weight: 900;
+    font-size: 28px;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .acp-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .acp-row .ar-label { font-weight: 700; color: var(--navy); white-space: nowrap; min-width: 100px; }
+  .acp-row .ar-value { color: #222; font-weight: 600; }
+  .acp-boxes { display: flex; gap: 3px; }
+  .acp-box {
+    width: 28px; height: 30px;
+    border: 1.5px solid var(--navy);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 13px; color: var(--navy);
+    background: #fff;
+  }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--navy); font-weight: 600; }
+  .sat-checkbox {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--navy);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--navy); background: #fff;
+  }
+  .sat-checkbox.checked { background: var(--navy); color: #fff; }
+  .cal-box {
+    background: var(--navy);
+    border-radius: 8px;
+    width: 70px;
+    overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+  }
+  .cal-box .cb-top { background: var(--red); color: #fff; font-size: 8px; font-weight: 700; text-align: center; padding: 3px; }
+  .cal-box .cb-month { color: var(--gold); font-size: 11px; font-weight: 800; text-align: center; padding: 3px 0 0; }
+  .cal-box .cb-day { color: #fff; font-size: 32px; font-weight: 900; font-family: 'Rajdhani', sans-serif; text-align: center; line-height: 1; }
+  .cal-box .cb-dow { background: var(--red); color: #fff; font-size: 7px; font-weight: 700; text-align: center; padding: 3px; border-radius: 0 0 8px 8px; }
+
+  .multi-results { display: flex; flex-direction: column; gap: 12px; }
+  .result-row {
+    background: #fff;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .result-row:hover { border-color: var(--red); }
+  .rr-info { font-size: 13px; }
+  .rr-info .rr-name { font-weight: 700; color: var(--navy); }
+  .rr-info .rr-admit { color: var(--red); font-weight: 600; font-size: 12px; }
+  .rr-info .rr-detail { color: #888; font-size: 11.5px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-  <h1><i class="bi bi-card-text me-2"></i>Download Admit Card</h1>
-  <p>Enter your registered mobile number to retrieve your admit card.</p>
+
+<div class="page-banner">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Admit Card</li>
+      </ol>
+    </nav>
+    <h2><i class="fas fa-id-card me-2"></i>Download Admit Card</h2>
+    <p>Enter your registered mobile number to view and download your admit card</p>
+  </div>
 </div>
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-5">
-      <div class="card mb-4">
-        <div class="card-header text-white py-3" style="background:#0d1b6e;">
-          <i class="bi bi-search me-2"></i>Find Your Admit Card
-        </div>
-        <div class="card-body p-4">
-          <form method="POST" action="{{ url_for('check_admit') }}">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Registered Mobile Number</label>
-              <input type="tel" name="mobile" class="form-control form-control-lg"
-                     placeholder="Enter 10-digit mobile" maxlength="10" required>
-            </div>
-            {% if error %}
-              <div class="alert alert-danger py-2">{{ error }}</div>
-            {% endif %}
-            <div class="d-grid">
-              <button type="submit" class="btn btn-gold btn-lg">
-                <i class="bi bi-search me-2"></i>Search
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
 
-      {% if student %}
-      <div class="card border-success">
-        <div class="card-header bg-success text-white py-3">
-          <i class="bi bi-person-check-fill me-2"></i>Registration Found
-        </div>
-        <div class="card-body p-4">
-          <table class="table table-borderless mb-3">
-            <tr><th class="text-muted" width="40%">Hall Ticket</th><td class="fw-bold fs-5 text-danger">{{ student.admit_card_no }}</td></tr>
-            <tr><th class="text-muted">Name</th><td class="fw-semibold">{{ student.name }}</td></tr>
-            <tr><th class="text-muted">Gender</th><td>{{ student.gender }}</td></tr>
-            <tr><th class="text-muted">Centre</th><td>{{ student.exam_centre }}</td></tr>
-            <tr><th class="text-muted">Exam Date</th><td>{{ student.exam_date }}</td></tr>
-            <tr><th class="text-muted">Time</th><td>{{ student.exam_time }}</td></tr>
-          </table>
-          <div class="d-grid">
-            <a href="{{ url_for('download_admit', reg_id=student.id) }}" class="btn btn-csc btn-lg">
-              <i class="bi bi-download me-2"></i>Download Admit Card PDF
-            </a>
-          </div>
-        </div>
-      </div>
-      {% endif %}
+<div class="container pb-5">
 
-      {% if students|length > 1 %}
-      <div class="card">
-        <div class="card-header text-white py-3" style="background:#0d1b6e;">
-          <i class="bi bi-people-fill me-2"></i>{{ students|length }} Registrations Found
+  <!-- SEARCH FORM -->
+  <div class="check-card mb-4">
+    <div class="check-card-header">
+      <div class="cc-icon"><i class="fas fa-mobile-alt"></i></div>
+      <h3>Find Your Admit Card</h3>
+      <p>Enter the mobile number used during registration</p>
+    </div>
+    <div class="check-card-body">
+      <form method="POST" action="{{ url_for('check_admit') }}">
+        <label class="form-label-sat">Registered Mobile Number <span class="required-star">*</span></label>
+        <div class="input-group mb-3">
+          <span class="input-group-text" style="background:#f0f0f0;border-color:#ddd;"><i class="fas fa-phone"></i></span>
+          <input type="tel" class="form-control form-control-sat"
+            name="mobile" placeholder="Enter 10-digit mobile number"
+            maxlength="10" pattern="[0-9]{10}" required
+            style="border-radius:0 8px 8px 0;">
         </div>
-        <div class="list-group list-group-flush">
-          {% for st in students %}
-          <div class="list-group-item p-3">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div class="fw-bold text-danger">{{ st.admit_card_no }}</div>
-                <div class="fw-semibold">{{ st.name }}</div>
-                <small class="text-muted">{{ st.exam_centre }} &middot; {{ st.exam_date }} &middot; {{ st.exam_time }}</small>
-              </div>
-              <a href="{{ url_for('download_admit', reg_id=st.id) }}" class="btn btn-sm btn-csc">
-                <i class="bi bi-download"></i> PDF
-              </a>
-            </div>
-          </div>
+        {% if error %}
+        <div class="alert alert-danger rounded-3 py-2 px-3" style="font-size:13px;">
+          <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-sat-primary w-100">
+          <i class="fas fa-search me-2"></i>Search Admit Card
+        </button>
+      </form>
+      <div class="text-center mt-3" style="font-size:12px;color:#aaa;">
+        Haven't registered yet? <a href="{{ url_for('register') }}" style="color:var(--red);font-weight:600;">Register here →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SINGLE RESULT -->
+  {% if student %}
+  <div class="text-center mb-3">
+    <span style="background:#e8f5e9;color:#2e7d32;font-weight:700;font-size:13px;padding:6px 18px;border-radius:20px;">
+      <i class="fas fa-check-circle me-1"></i>Registration Found
+    </span>
+  </div>
+
+  <!-- ADMIT CARD PREVIEW -->
+  <div class="admit-card-preview mb-4">
+    <div class="acp-left">
+      <div class="acp-sat-badge">
+        <div class="sb-main">SAT 2026</div>
+        <div class="sb-sub">33rd Scholarship Aptitude Test</div>
+      </div>
+      <div class="acp-75-box">
+        <div class="win">Win up to</div>
+        <div class="pct">75%</div>
+        <div class="sch">Scholarship</div>
+      </div>
+      <div class="tamil-text">அனுமதி இலவசம்!<br>அனைவரும் வருக!!</div>
+      <div class="acp-logo-circle">
+        <div class="lc-csc">CSC</div>
+        <div class="lc-sub">COMPUTER<br>SOFTWARE</div>
+      </div>
+    </div>
+
+    <div class="acp-right">
+      <div class="acp-title">ADMIT CARD</div>
+
+      <div class="acp-row">
+        <span class="ar-label">Admit Card No:</span>
+        <div class="acp-boxes">
+          {% for ch in student.admit_card_no %}
+          <div class="acp-box">{{ ch.upper() }}</div>
           {% endfor %}
         </div>
       </div>
-      {% endif %}
+
+      <div class="acp-row">
+        <div class="checkbox-row">
+          <span style="font-weight:700;color:var(--navy);min-width:40px;">Sex:</span>
+          <div class="sat-checkbox {% if student.gender == 'Male' %}checked{% endif %}">{% if student.gender == 'Male' %}✓{% endif %}</div>
+          <span>M</span>
+          <div class="sat-checkbox {% if student.gender == 'Female' %}checked{% endif %}">{% if student.gender == 'Female' %}✓{% endif %}</div>
+          <span>F</span>
+          <span style="margin-left:14px;font-weight:700;color:var(--navy);">Time:</span>
+          <span style="color:var(--navy);text-decoration:underline;">{{ student.exam_time }}</span>
+        </div>
+      </div>
+
+      <div class="acp-row">
+        <span class="ar-label">Name :</span>
+        <span class="ar-value" style="text-decoration:underline;letter-spacing:0.5px;">{{ student.name.upper() }}</span>
+      </div>
+
+      <div class="acp-row">
+        <span class="ar-label">Centre Address :</span>
+        <span class="ar-value">{{ student.exam_centre.upper() }}</span>
+      </div>
+
+      <div class="acp-row mt-2">
+        <div class="d-flex align-items-end gap-3">
+          {% set is_april = 'April' in student.exam_date %}
+          <div class="cal-box">
+            <div class="cb-top">EXAM DATE</div>
+            <div class="cb-month">{{ 'APRIL' if is_april else 'MARCH' }}</div>
+            <div class="cb-day">{{ '04' if is_april else '29' }}</div>
+            <div class="cb-dow">{{ 'SATURDAY' if is_april else 'SUNDAY' }}</div>
+          </div>
+          <div style="font-size:11px;color:#888;font-style:italic;padding-bottom:4px;">
+            Examiner<br>___________
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <div class="text-center">
+    <a href="{{ url_for('download_admit', reg_id=student.id) }}" class="btn btn-sat-primary btn-lg px-5">
+      <i class="fas fa-download me-2"></i>Download PDF Admit Card
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- MULTIPLE RESULTS -->
+  {% if students and students|length > 1 %}
+  <div class="max-width-700 mx-auto">
+    <div class="mb-3 text-center" style="font-weight:700;color:var(--navy);">
+      <i class="fas fa-list me-1"></i>{{ students|length }} registrations found. Select one to download:
+    </div>
+    <div class="multi-results">
+      {% for s in students %}
+      <div class="result-row">
+        <div class="rr-info">
+          <div class="rr-name">{{ s.name }}</div>
+          <div class="rr-admit"><i class="fas fa-ticket-alt me-1"></i>{{ s.admit_card_no }}</div>
+          <div class="rr-detail"><i class="fas fa-calendar me-1"></i>{{ s.exam_date }} &nbsp;|&nbsp; <i class="fas fa-clock me-1"></i>{{ s.exam_time }} &nbsp;|&nbsp; <i class="fas fa-map-marker-alt me-1"></i>{{ s.exam_centre }}</div>
+        </div>
+        <a href="{{ url_for('download_admit', reg_id=s.id) }}" class="btn btn-sat-secondary btn-sm">
+          <i class="fas fa-download me-1"></i>Download
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelector('input[name=mobile]').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').slice(0, 10);
+});
+</script>
 {% endblock %}

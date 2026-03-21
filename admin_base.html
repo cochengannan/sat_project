@@ -1,88 +1,192 @@
-{% extends 'base.html' %}
-{% block title %}Register - CSC SAT 2026{% endblock %}
-{% block content %}
+{% extends 'admin_base.html' %}
+{% block title %}Dashboard — CSC SAT 2026 Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chart-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    height: 100%;
+  }
+  .chart-card h6 { font-weight: 700; color: var(--navy); font-size: 14px; margin-bottom: 16px; }
+  .progress-item { margin-bottom: 14px; }
+  .progress-item .pi-label { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; font-weight: 500; }
+  .progress-item .pi-label .name { color: #555; }
+  .progress-item .pi-label .count { color: var(--navy); font-weight: 700; }
+  .progress { height: 8px; border-radius: 10px; background: #f0f0f0; }
+  .progress-bar { border-radius: 10px; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
 <div class="page-header">
-  <h1><i class="bi bi-pencil-square me-2"></i>Student Registration</h1>
-  <p>Fill in all details carefully. You cannot edit after submission.</p>
+  <h4><i class="fas fa-tachometer-alt me-2" style="color:var(--red)"></i>Dashboard</h4>
+  <p>Overview of CSC SAT 2026 registrations</p>
 </div>
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-7">
-      <div class="card">
-        <div class="card-header text-white py-3" style="background:#0d1b6e;">
-          <i class="bi bi-person-fill me-2"></i>SAT 2026 - Registration Form
-        </div>
-        <div class="card-body p-4">
-          <form method="POST" action="{{ url_for('register') }}" novalidate>
 
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-              <input type="text" name="name" class="form-control" placeholder="Enter your full name"
-                     value="{{ form.get('name','') }}" required>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Gender <span class="text-danger">*</span></label>
-              <div class="d-flex gap-4">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="gender" value="Male" id="gMale"
-                    {{ 'checked' if form.get('gender')=='Male' else '' }}>
-                  <label class="form-check-label" for="gMale">Male</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="gender" value="Female" id="gFemale"
-                    {{ 'checked' if form.get('gender')=='Female' else '' }}>
-                  <label class="form-check-label" for="gFemale">Female</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Mobile Number <span class="text-danger">*</span></label>
-              <input type="tel" name="mobile" class="form-control" placeholder="10-digit mobile number"
-                     maxlength="10" value="{{ form.get('mobile','') }}" required>
-              <div class="form-text">Used to retrieve your admit card.</div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Exam Centre <span class="text-danger">*</span></label>
-              <select name="exam_centre" class="form-select" required>
-                <option value="">- Select Centre -</option>
-                {% for cname in centres %}
-                  <option value="{{ cname }}" {{ 'selected' if form.get('exam_centre')==cname else '' }}>{{ cname }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Exam Date <span class="text-danger">*</span></label>
-              <select name="exam_date" class="form-select" required>
-                <option value="">- Select Date -</option>
-                {% for d in exam_dates %}
-                  <option value="{{ d }}" {{ 'selected' if form.get('exam_date')==d else '' }}>{{ d }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Time Slot <span class="text-danger">*</span></label>
-              <select name="exam_time" class="form-select" required>
-                <option value="">- Select Time -</option>
-                {% for t in timings %}
-                  <option value="{{ t }}" {{ 'selected' if form.get('exam_time')==t else '' }}>{{ t }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="d-grid">
-              <button type="submit" class="btn btn-gold btn-lg">
-                <i class="bi bi-check-circle-fill me-2"></i>Submit Registration
-              </button>
-            </div>
-          </form>
-        </div>
+<!-- STATS -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card red">
+      <div class="sc-icon"><i class="fas fa-users"></i></div>
+      <div>
+        <div class="sc-num">{{ total }}</div>
+        <div class="sc-label">Total Registrations</div>
       </div>
     </div>
+  </div>
+  {% set male_count = namespace(v=0) %}
+  {% set female_count = namespace(v=0) %}
+  {% for g in by_gender %}
+    {% if g.gender == 'Male' %}{% set male_count.v = g.cnt %}{% endif %}
+    {% if g.gender == 'Female' %}{% set female_count.v = g.cnt %}{% endif %}
+  {% endfor %}
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card navy">
+      <div class="sc-icon"><i class="fas fa-mars"></i></div>
+      <div>
+        <div class="sc-num">{{ male_count.v }}</div>
+        <div class="sc-label">Male Students</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card gold">
+      <div class="sc-icon"><i class="fas fa-venus"></i></div>
+      <div>
+        <div class="sc-num">{{ female_count.v }}</div>
+        <div class="sc-label">Female Students</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card green">
+      <div class="sc-icon"><i class="fas fa-school"></i></div>
+      <div>
+        <div class="sc-num">{{ by_centre|length }}</div>
+        <div class="sc-label">Active Centres</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- By Centre -->
+  <div class="col-md-4">
+    <div class="chart-card">
+      <h6><i class="fas fa-map-marker-alt me-1" style="color:var(--red)"></i>By Centre</h6>
+      {% for c in by_centre %}
+      <div class="progress-item">
+        <div class="pi-label">
+          <span class="name">{{ c.exam_centre }}</span>
+          <span class="count">{{ c.cnt }}</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar bg-danger" style="width:{% if total > 0 %}{{ (c.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not by_centre %}
+      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- By Gender -->
+  <div class="col-md-4">
+    <div class="chart-card">
+      <h6><i class="fas fa-venus-mars me-1" style="color:var(--red)"></i>By Gender</h6>
+      {% for g in by_gender %}
+      <div class="progress-item">
+        <div class="pi-label">
+          <span class="name">{{ g.gender }}</span>
+          <span class="count">{{ g.cnt }}</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar {% if g.gender == 'Male' %}bg-primary{% else %}" style="background:#c2185b!important;{% endif %}width:{% if total > 0 %}{{ (g.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not by_gender %}
+      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- By Date -->
+  <div class="col-md-4">
+    <div class="chart-card">
+      <h6><i class="fas fa-calendar me-1" style="color:var(--red)"></i>By Exam Date</h6>
+      {% for d in by_date %}
+      <div class="progress-item">
+        <div class="pi-label">
+          <span class="name" style="font-size:11px;">{{ d.exam_date[:20] }}...</span>
+          <span class="count">{{ d.cnt }}</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" style="background:var(--navy);width:{% if total > 0 %}{{ (d.cnt/total*100)|int }}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not by_date %}
+      <div style="color:#aaa;font-size:13px;text-align:center;padding:20px 0;">No data yet</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- RECENT REGISTRATIONS -->
+<div class="chart-card">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="mb-0"><i class="fas fa-clock me-1" style="color:var(--red)"></i>Recent Registrations</h6>
+    <a href="{{ url_for('admin_students') }}" class="btn btn-sm" style="background:var(--navy);color:#fff;border-radius:8px;font-size:12px;padding:5px 14px;">
+      View All <i class="fas fa-arrow-right ms-1"></i>
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table sat-table mb-0">
+      <thead>
+        <tr>
+          <th>Hall Ticket</th>
+          <th>Name</th>
+          <th>Gender</th>
+          <th>Mobile</th>
+          <th>Centre</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in recent %}
+        <tr>
+          <td><span style="font-weight:700;color:var(--red);">{{ s.admit_card_no }}</span></td>
+          <td style="font-weight:600;">{{ s.name }}</td>
+          <td>
+            <span class="{% if s.gender == 'Male' %}badge-male{% else %}badge-female{% endif %}">{{ s.gender }}</span>
+          </td>
+          <td style="font-family:monospace;">{{ s.mobile }}</td>
+          <td><span class="badge-centre">{{ s.exam_centre }}</span></td>
+          <td style="font-size:12px;">{{ s.exam_date }}</td>
+          <td style="font-size:12px;">{{ s.exam_time }}</td>
+          <td>
+            <a href="{{ url_for('admin_download_admit', reg_id=s.id) }}" class="btn btn-sm" style="background:#e8eaf6;color:var(--navy);border-radius:6px;font-size:11px;padding:4px 10px;">
+              <i class="fas fa-download"></i>
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4" style="font-size:14px;">
+            <i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>No registrations yet
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}
