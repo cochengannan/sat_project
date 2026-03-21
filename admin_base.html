@@ -1,0 +1,37 @@
+/* CSC SAT 2026 — Custom Styles */
+
+:root {
+  --csc-red:    #e60000;
+  --csc-navy:   #0a0a6e;
+  --csc-yellow: #fdd835;
+}
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }
+
+/* Form controls */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--csc-navy);
+  box-shadow: 0 0 0 .2rem rgba(10,10,110,.15);
+}
+
+/* Alert tweaks */
+.alert { border-left: 4px solid; border-radius: 10px; }
+.alert-success { border-color: #28a745; }
+.alert-danger  { border-color: #dc3545; }
+.alert-warning { border-color: #ffc107; }
+
+/* Responsive table wrapper */
+.table-responsive { border-radius: 0 0 14px 14px; }
+
+/* Pagination active */
+.page-item.active .page-link {
+  background-color: var(--csc-navy);
+  border-color: var(--csc-navy);
+}
+.page-link { color: var(--csc-navy); }
+.page-link:hover { color: var(--csc-red); }
+
+/* Badge pink for female */
+.badge-female { background: #e91e8c !important; }
