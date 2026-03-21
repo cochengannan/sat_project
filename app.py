@@ -13,10 +13,10 @@ from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
- 
+
 app = Flask(__name__)
 app.secret_key = 'sat2026_csc_secret_xK9mP3nQ'
- 
+
 # ─── DATABASE CONFIG ─────────────────────────────────────────
 DB_CONFIG = {
     'host':     'sql12.freesqldatabase.com',
@@ -26,17 +26,17 @@ DB_CONFIG = {
     'port':     3306,
     'charset':  'utf8mb4',
 }
- 
+
 # ─── ADMIN CREDENTIALS ───────────────────────────────────────
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'sat@admin2026'
- 
+
 # ─── EXAM CONFIGURATION ──────────────────────────────────────
 EXAM_DATES = [
     '29 March 2026 (Sunday)',
     '04 April 2026 (Saturday)',
 ]
- 
+
 TIMINGS = [
     '7:00 AM', '7:30 AM',
     '8:00 AM', '8:30 AM',
@@ -46,19 +46,19 @@ TIMINGS = [
     '12:00 PM','12:30 PM',
     '1:00 PM',
 ]
- 
+
 # prefix per centre — used in hall ticket no generation
 CENTRES = {
     'Pammal':     'pmld',
     'Pallavaram': 'pvmd',
     'Chrompet':   'chrd',
 }
- 
+
 # ─── DATABASE HELPERS ────────────────────────────────────────
 def get_db():
     return mysql.connector.connect(**DB_CONFIG)
- 
- 
+
+
 def init_db():
     """Create the registrations table if it doesn't exist."""
     try:
@@ -69,7 +69,7 @@ def init_db():
         print(f"  Error: {e}")
         print(f"{'='*60}\n")
         raise SystemExit(1)
- 
+
     cur = conn.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS registrations (
@@ -92,8 +92,8 @@ def init_db():
     cur.close()
     conn.close()
     print("✅  Database tables ready.")
- 
- 
+
+
 def generate_admit_no(centre):
     """Generate hall ticket: prefix + zero-padded serial per centre."""
     prefix = CENTRES.get(centre, 'sat')
@@ -106,8 +106,8 @@ def generate_admit_no(centre):
     cur.close()
     conn.close()
     return f"{prefix}{count + 1:03d}"
- 
- 
+
+
 # ─── AUTH DECORATOR ──────────────────────────────────────────
 def admin_required(f):
     @wraps(f)
@@ -116,8 +116,8 @@ def admin_required(f):
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated
- 
- 
+
+
 # ─── ADMIT CARD PDF GENERATOR ────────────────────────────────
 def build_admit_pdf(s):
     """
@@ -134,7 +134,7 @@ def build_admit_pdf(s):
     buf = io.BytesIO()
     W, H = landscape(A5)          # 595.3 × 419.5 pt
     c    = pdfcanvas.Canvas(buf, pagesize=(W, H))
- 
+
     # Colours (sampled from reference image)
     RED        = colors.HexColor('#FF0000')
     CREAM      = colors.HexColor('#FCFDCD')
@@ -144,14 +144,14 @@ def build_admit_pdf(s):
     WHITE      = colors.white
     GOLD       = colors.HexColor('#C8A050')
     GREEN_BORD = colors.HexColor('#A8D898')
- 
+
     LP = 58 * mm    # left panel width
     BR = 13 * mm    # decorative border strip width (each side)
- 
+
     # ── Cream background ──────────────────────────────────────
     c.setFillColor(CREAM)
     c.rect(0, 0, W, H, fill=1, stroke=0)
- 
+
     # ── Decorative border strips ──────────────────────────────
     def draw_border(x, sw, h):
         c.setFillColor(GOLD);      c.rect(x, 0, sw, h, fill=1, stroke=0)
@@ -168,15 +168,15 @@ def build_admit_pdf(s):
         c.setFillColor(GREEN_BORD)
         for yp in range(5, int(h), 10):
             c.circle(cx, yp, 1.5, fill=1, stroke=0)
- 
+
     draw_border(0, BR, H)
     draw_border(W - BR, BR, H)
- 
+
     # ── Left red panel ────────────────────────────────────────
     c.setFillColor(RED)
     c.rect(BR, 0, LP - BR, H, fill=1, stroke=0)
     mid = BR + (LP - BR) / 2     # horizontal centre of left panel
- 
+
     # SAT 2026 badge
     bx = BR+6; by = H-52; bw = LP-BR-12; bh = 40
     c.setFillColor(DARK_NAVY); c.roundRect(bx, by, bw, bh, 10, fill=1, stroke=0)
@@ -186,7 +186,7 @@ def build_admit_pdf(s):
     c.drawCentredString(mid, by+bh-15, 'SAT 2026')
     c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 5.5)
     c.drawCentredString(mid, by+5, '33rd Scholarship Aptitude Test')
- 
+
     # Win up to 75% box
     wx = BR+5; wy = H-148; ww = LP-BR-10; wh = 90
     c.setFillColor(DARK_NAVY); c.roundRect(wx, wy, ww, wh, 8, fill=1, stroke=0)
@@ -196,12 +196,12 @@ def build_admit_pdf(s):
     c.drawCentredString(mid, wy+wh-60, '75%')
     c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 14)
     c.drawCentredString(mid, wy+8, 'Scholarship')
- 
+
     # Tamil text
     c.setFillColor(DARK_NAVY); c.setFont('Helvetica-Bold', 7)
     c.drawCentredString(mid, H-162, 'anumadhi ilavasam !')
     c.drawCentredString(mid, H-173, 'anaivarium varuga !!')
- 
+
     # CSC circle logo
     cy0 = 34
     c.setFillColor(DARK_NAVY); c.circle(mid, cy0, 28, fill=1, stroke=0)
@@ -212,15 +212,15 @@ def build_admit_pdf(s):
     c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 4.5)
     c.drawCentredString(mid, cy0-19, 'COMPUTER SOFTWARE COLLEGE')
     c.drawCentredString(mid, cy0-25, 'An ISO 9001 : 2015 Certified Institution')
- 
+
     # ── Right cream panel ─────────────────────────────────────
     rx  = LP + 10                       # left margin of right content
     rc  = LP + (W - BR - LP) / 2       # horizontal centre of right panel
- 
+
     # "ADMIT CARD" title
     c.setFillColor(RED); c.setFont('Helvetica-Bold', 38)
     c.drawCentredString(rc, H-40, 'ADMIT CARD')
- 
+
     # Admit Card No label + 6 boxes
     c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
     c.drawString(rx, H-102, 'Admit Card No:')
@@ -233,7 +233,7 @@ def build_admit_pdf(s):
         if i < len(admit_no):
             c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
             c.drawCentredString(xi+bw2/2, bry+9, admit_no[i].upper())
- 
+
     # Sex + Time row
     sy = H-177
     ms = 15    # checkbox size
@@ -264,7 +264,7 @@ def build_admit_pdf(s):
     c.line(tvx, sy-3, tvx+72, sy-3)
     c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
     c.drawString(tvx+74, sy, 'am./pm.')
- 
+
     # Name row
     ny = H-210
     c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
@@ -272,20 +272,20 @@ def build_admit_pdf(s):
     c.drawString(rx+50, ny, str(s.get('name', '')).upper())
     c.setStrokeColor(NAVY); c.setLineWidth(1.2)
     c.line(rx+48, ny-3, W-BR-14, ny-3)
- 
+
     # Centre Address row
     cay = H-243
     c.setFillColor(NAVY); c.setFont('Helvetica-Bold', 11)
     c.drawString(rx, cay, 'Centre Address :')
     c.drawString(rx+104, cay, str(s.get('exam_centre', '')).upper())
- 
+
     # Desk calendar widget
     exam_date_str = str(s.get('exam_date', ''))
     if 'April' in exam_date_str:
         cal_month, cal_day, cal_day_name = 'APRIL', '4', 'SATURDAY'
     else:
         cal_month, cal_day, cal_day_name = 'MARCH', '29', 'SUNDAY'
- 
+
     clx = LP+12; cly = H-344; clw = 68; clh = 90
     c.setFillColor(colors.HexColor('#999999'))
     c.roundRect(clx+3, cly-3, clw, clh, 4, fill=1, stroke=0)   # shadow
@@ -305,25 +305,25 @@ def build_admit_pdf(s):
     c.roundRect(clx+5, cly+3, clw-10, 14, 3, fill=1, stroke=0)
     c.setFillColor(WHITE); c.setFont('Helvetica-Bold', 7)
     c.drawCentredString(clx+clw/2, cly+6, cal_day_name)
- 
+
     # "Examiner" bottom-right
     c.setFillColor(RED); c.setFont('Helvetica-Bold', 11)
     c.drawString(W-BR-58, H-386, 'Examiner')
- 
+
     c.save()
     buf.seek(0)
     return buf
- 
- 
+
+
 # ═══════════════════════════════════════════════════════════
 # PUBLIC ROUTES
 # ═══════════════════════════════════════════════════════════
- 
+
 @app.route('/')
 def index():
     return render_template('index.html')
- 
- 
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -333,7 +333,7 @@ def register():
         centre = request.form.get('exam_centre', '')
         date   = request.form.get('exam_date',   '')
         time   = request.form.get('exam_time',   '')
- 
+
         # Validate
         errors = []
         if not name:
@@ -348,14 +348,14 @@ def register():
             errors.append('Please select a valid exam date.')
         if time not in TIMINGS:
             errors.append('Please select a valid time slot.')
- 
+
         if errors:
             for e in errors:
                 flash(e, 'danger')
             return render_template('register.html', form=request.form,
                                    centres=CENTRES, timings=TIMINGS,
                                    exam_dates=EXAM_DATES)
- 
+
         try:
             conn     = get_db()
             cur      = conn.cursor()
@@ -378,18 +378,18 @@ def register():
             return redirect(url_for('check_admit'))
         except Exception as e:
             flash(f'Registration failed: {str(e)}', 'danger')
- 
+
     return render_template('register.html', form={},
                            centres=CENTRES, timings=TIMINGS,
                            exam_dates=EXAM_DATES)
- 
- 
+
+
 @app.route('/check', methods=['GET', 'POST'])
 def check_admit():
     student  = None
     students = []
     error    = None
- 
+
     if request.method == 'POST':
         mobile = request.form.get('mobile', '').strip()
         if not mobile:
@@ -413,11 +413,11 @@ def check_admit():
                     student = students[0]
             except Exception as e:
                 error = f'Database error: {str(e)}'
- 
+
     return render_template('check_admit.html',
                            student=student, students=students, error=error)
- 
- 
+
+
 @app.route('/download_admit/<int:reg_id>')
 def download_admit(reg_id):
     try:
@@ -440,12 +440,12 @@ def download_admit(reg_id):
     except Exception as e:
         flash(f'Error generating admit card: {str(e)}', 'danger')
         return redirect(url_for('check_admit'))
- 
- 
+
+
 # ═══════════════════════════════════════════════════════════
 # ADMIN ROUTES
 # ═══════════════════════════════════════════════════════════
- 
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -455,14 +455,14 @@ def admin_login():
             return redirect(url_for('admin_dashboard'))
         flash('Invalid credentials.', 'danger')
     return render_template('admin_login.html')
- 
- 
+
+
 @app.route('/admin/logout')
 def admin_logout():
     session.clear()
     return redirect(url_for('admin_login'))
- 
- 
+
+
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
@@ -502,8 +502,8 @@ def admin_dashboard():
         return render_template('admin_dashboard.html',
                                total=0, by_centre=[], by_gender=[],
                                by_date=[], recent=[])
- 
- 
+
+
 @app.route('/admin/students')
 @admin_required
 def admin_students():
@@ -513,13 +513,13 @@ def admin_students():
     gender = request.args.get('gender', '').strip()
     page   = int(request.args.get('page', 1))
     per    = 20
- 
+
     try:
         conn   = get_db()
         cur    = conn.cursor(dictionary=True)
         where  = ['is_active=1']
         params = []
- 
+
         if search:
             where.append(
                 '(name LIKE %s OR mobile LIKE %s OR admit_card_no LIKE %s)'
@@ -531,7 +531,7 @@ def admin_students():
             where.append('exam_date=%s');   params.append(date)
         if gender:
             where.append('gender=%s');      params.append(gender)
- 
+
         wsql = 'WHERE ' + ' AND '.join(where)
         cur.execute(
             f"SELECT COUNT(*) AS cnt FROM registrations {wsql}", params
@@ -545,7 +545,7 @@ def admin_students():
         students = cur.fetchall()
         cur.close()
         conn.close()
- 
+
         return render_template(
             'admin_students.html',
             students=students, search=search, centre=centre,
@@ -563,8 +563,8 @@ def admin_students():
             page=1, total_pages=1, total_rows=0,
             centres=list(CENTRES.keys()), exam_dates=EXAM_DATES,
         )
- 
- 
+
+
 @app.route('/admin/download_admit/<int:reg_id>')
 @admin_required
 def admin_download_admit(reg_id):
@@ -585,8 +585,8 @@ def admin_download_admit(reg_id):
     except Exception as e:
         flash(f'Error: {str(e)}', 'danger')
         return redirect(url_for('admin_students'))
- 
- 
+
+
 @app.route('/admin/download_excel')
 @admin_required
 def download_excel():
@@ -602,23 +602,23 @@ def download_excel():
         rows = cur.fetchall()
         cur.close()
         conn.close()
- 
+
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = 'SAT 2026 Registrations'
- 
+
         thin = Side(style='thin')
         bdr  = Border(left=thin, right=thin, top=thin, bottom=thin)
         hdrs = ['Hall Ticket No', 'Name', 'Gender', 'Mobile',
                 'Centre', 'Exam Date', 'Time', 'Registered At']
- 
+
         for col, h in enumerate(hdrs, 1):
             cell = ws.cell(row=1, column=col, value=h)
             cell.font      = Font(bold=True, color='FFFFFF', size=11)
             cell.fill      = PatternFill('solid', fgColor='1A237E')
             cell.alignment = Alignment(horizontal='center')
             cell.border    = bdr
- 
+
         for ri, r in enumerate(rows, 2):
             vals = [
                 r['admit_card_no'], r['name'],      r['gender'],
@@ -630,12 +630,12 @@ def download_excel():
                 cell.border = bdr
                 if ri % 2 == 0:
                     cell.fill = PatternFill('solid', fgColor='E8EAF6')
- 
+
         for col in ws.columns:
             ws.column_dimensions[col[0].column_letter].width = min(
                 max(len(str(cell.value or '')) for cell in col) + 4, 40
             )
- 
+
         buf   = io.BytesIO()
         wb.save(buf)
         buf.seek(0)
@@ -648,8 +648,8 @@ def download_excel():
     except Exception as e:
         flash(f'Excel export failed: {str(e)}', 'danger')
         return redirect(url_for('admin_students'))
- 
- 
+
+
 @app.route('/admin/download_pdf_list')
 @admin_required
 def download_pdf_list():
@@ -665,7 +665,7 @@ def download_pdf_list():
         rows = cur.fetchall()
         cur.close()
         conn.close()
- 
+
         buf = io.BytesIO()
         doc = SimpleDocTemplate(
             buf, pagesize=landscape(A4),
@@ -689,7 +689,7 @@ def download_pdf_list():
                 sub_s
             ),
         ]
- 
+
         td = [['#', 'Hall Ticket', 'Name', 'Gender', 'Mobile',
                'Centre', 'Date', 'Time', 'Registered']]
         for i, r in enumerate(rows, 1):
@@ -701,7 +701,7 @@ def download_pdf_list():
                 r['mobile'], r['exam_centre'], r['exam_date'],
                 r['exam_time'], str(ra)
             ])
- 
+
         t = Table(
             td, repeatRows=1,
             colWidths=[10*mm,28*mm,50*mm,20*mm,30*mm,
@@ -730,8 +730,8 @@ def download_pdf_list():
     except Exception as e:
         flash(f'PDF export failed: {str(e)}', 'danger')
         return redirect(url_for('admin_students'))
- 
- 
+
+
 @app.route('/admin/api/stats')
 @admin_required
 def api_stats():
@@ -753,12 +753,12 @@ def api_stats():
         return jsonify({'by_centre': by_centre, 'by_gender': by_gender})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
- 
- 
+
+
 # ═══════════════════════════════════════════════════════════
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════
- 
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, port=5000)
