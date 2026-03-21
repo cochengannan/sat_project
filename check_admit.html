@@ -1,37 +1,109 @@
-/* CSC SAT 2026 — Custom Styles */
+{% extends 'base.html' %}
+{% block title %}Register - CSC SAT 2026{% endblock %}
 
-:root {
-  --csc-red:    #e60000;
-  --csc-navy:   #0a0a6e;
-  --csc-yellow: #fdd835;
-}
+{% block content %}
+<div class="hero-strip">
+  <h1><i class="bi bi-pencil-square me-2"></i>Student Registration</h1>
+  <p>Fill in all details carefully. You cannot edit after submission.</p>
+</div>
 
-/* Smooth scrolling */
-html { scroll-behavior: smooth; }
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header text-white py-3" style="background:#0a0a6e;">
+          <i class="bi bi-person-fill me-2"></i>SAT 2026 - Registration Form
+        </div>
+        <div class="card-body p-4">
 
-/* Form controls */
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--csc-navy);
-  box-shadow: 0 0 0 .2rem rgba(10,10,110,.15);
-}
+          <form method="POST" action="{{ url_for('register') }}" novalidate>
 
-/* Alert tweaks */
-.alert { border-left: 4px solid; border-radius: 10px; }
-.alert-success { border-color: #28a745; }
-.alert-danger  { border-color: #dc3545; }
-.alert-warning { border-color: #ffc107; }
+            <!-- Name -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control"
+                     placeholder="Enter your full name"
+                     value="{{ form.get('name','') }}" required>
+            </div>
 
-/* Responsive table wrapper */
-.table-responsive { border-radius: 0 0 14px 14px; }
+            <!-- Gender -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Gender <span class="text-danger">*</span></label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="gender" value="Male" id="gMale"
+                    {{ 'checked' if form.get('gender')=='Male' else '' }}>
+                  <label class="form-check-label" for="gMale">Male</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="gender" value="Female" id="gFemale"
+                    {{ 'checked' if form.get('gender')=='Female' else '' }}>
+                  <label class="form-check-label" for="gFemale">Female</label>
+                </div>
+              </div>
+            </div>
 
-/* Pagination active */
-.page-item.active .page-link {
-  background-color: var(--csc-navy);
-  border-color: var(--csc-navy);
-}
-.page-link { color: var(--csc-navy); }
-.page-link:hover { color: var(--csc-red); }
+            <!-- Mobile -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+              <input type="tel" name="mobile" class="form-control"
+                     placeholder="10-digit mobile number" maxlength="10"
+                     value="{{ form.get('mobile','') }}" required>
+              <div class="form-text">This will be used to retrieve your admit card.</div>
+            </div>
 
-/* Badge pink for female */
-.badge-female { background: #e91e8c !important; }
+            <!-- Exam Centre -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Exam Centre <span class="text-danger">*</span></label>
+              <select name="exam_centre" class="form-select" required>
+                <option value="">- Select Centre -</option>
+                {% for cname in centres %}
+                  <option value="{{ cname }}"
+                    {{ 'selected' if form.get('exam_centre')==cname else '' }}>
+                    {{ cname }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Exam Date -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Exam Date <span class="text-danger">*</span></label>
+              <select name="exam_date" class="form-select" required>
+                <option value="">- Select Date -</option>
+                {% for d in exam_dates %}
+                  <option value="{{ d }}"
+                    {{ 'selected' if form.get('exam_date')==d else '' }}>
+                    {{ d }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Exam Time -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Preferred Time Slot <span class="text-danger">*</span></label>
+              <select name="exam_time" class="form-select" required>
+                <option value="">- Select Time -</option>
+                {% for t in timings %}
+                  <option value="{{ t }}"
+                    {{ 'selected' if form.get('exam_time')==t else '' }}>
+                    {{ t }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-csc btn-lg">
+                <i class="bi bi-check-circle-fill me-2"></i>Submit Registration
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
