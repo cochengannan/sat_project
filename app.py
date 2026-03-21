@@ -14,6 +14,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 
+
 app = Flask(__name__)
 app.secret_key = 'sat2026_csc_secret_xK9mP3nQ'
 
