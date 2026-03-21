@@ -16,4 +16,4 @@ services:
       - key: MYSQLDATABASE
         sync: false
       - key: MYSQLPORT
-        value: 3306
+        value: "3306"
