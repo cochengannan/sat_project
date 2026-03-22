@@ -1,59 +1,313 @@
-{% extends 'base.html' %}
-{% block title %}CSC SAT 2026 — Home{% endblock %}
+{% extends "base.html" %}
+{% block title %}CSC SAT 2026 — Scholarship Aptitude Test{% endblock %}
+{% block extra_head %}
+<style>
+/* ══ HERO ══ */
+.hero {
+  min-height: 92vh;
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 4rem 0 3rem;
+  background: linear-gradient(135deg, #0d1257 0%, #1a237e 55%, #283593 100%);
+  background-size: 300% 300%;
+  animation: gradShift 14s ease infinite;
+  color: #fff;
+}
+@keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+.orb { position:absolute; border-radius:50%; pointer-events:none; animation:orbFloat ease-in-out infinite; }
+.orb-1{width:420px;height:420px;background:rgba(255,215,0,.06);top:-100px;right:-80px;animation-duration:11s;}
+.orb-2{width:300px;height:300px;background:rgba(255,255,255,.04);bottom:-90px;left:-60px;animation-duration:14s;animation-delay:-5s;}
+.orb-3{width:190px;height:190px;background:rgba(255,215,0,.05);top:35%;left:40%;animation-duration:9s;animation-delay:-3s;}
+@keyframes orbFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-28px) scale(1.06)}}
+
+.particle{position:absolute;border-radius:50%;background:rgba(255,215,0,.55);animation:rise linear infinite;pointer-events:none;}
+@keyframes rise{0%{transform:translateY(110vh) scale(0);opacity:0}8%{opacity:1}92%{opacity:.5}100%{transform:translateY(-8vh) scale(1.5);opacity:0}}
+
+/* Entrance */
+.a-logo { animation: sDn .5s cubic-bezier(.22,1,.36,1) both; }
+.a-tag  { animation: sDn .7s cubic-bezier(.22,1,.36,1) .08s both; }
+.a-h1   { animation: sDn .9s cubic-bezier(.22,1,.36,1) .18s both; }
+.a-p    { animation: sDn 1.1s cubic-bezier(.22,1,.36,1) .28s both; }
+.a-btn  { animation: sDn 1.3s cubic-bezier(.22,1,.36,1) .38s both; }
+.a-cd   { animation: sUp 1.2s cubic-bezier(.22,1,.36,1) .52s both; }
+.a-ring { animation: pop 1s cubic-bezier(.34,1.56,.64,1) .45s both; }
+.a-st   { animation: sUp 1.1s cubic-bezier(.22,1,.36,1) .65s both; }
+@keyframes sDn{from{opacity:0;transform:translateY(-36px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sUp{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{opacity:0;transform:scale(.3) rotate(-8deg)}60%{transform:scale(1.1) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+
+/* CSC Logo in hero */
+.hero-logo-img {
+  width: 90px; height: 90px; object-fit: contain;
+  border-radius: 14px;
+  filter: drop-shadow(0 4px 16px rgba(255,215,0,.35));
+  margin-bottom: .5rem;
+}
+
+/* Badge */
+.hero-badge {
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,215,0,.13);border:1px solid rgba(255,215,0,.4);
+  color:#ffd700;padding:.4rem 1.1rem;border-radius:30px;
+  font-size:.86rem;font-weight:600;margin-bottom:1rem;
+}
+
+/* Ring */
+.ring {
+  width:158px;height:158px;border-radius:50%;
+  border:5px solid #ffd700;
+  background:rgba(255,215,0,.07);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:0 auto;position:relative;
+  animation:glow 3s ease-in-out infinite;
+}
+.ring::before{content:'';position:absolute;inset:-16px;border-radius:50%;border:2px solid rgba(255,215,0,.18);animation:glow 3s ease-in-out infinite reverse;}
+.ring::after{content:'';position:absolute;inset:-30px;border-radius:50%;border:1px solid rgba(255,215,0,.07);animation:glow 3s ease-in-out 1.5s infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,.3)}50%{box-shadow:0 0 0 22px rgba(255,215,0,0)}}
+.ring .num  {font-size:2.8rem;font-weight:900;color:#ffd700;line-height:1;}
+.ring .lbl  {font-size:.62rem;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.05em;}
+
+/* Stats */
+.stat-num{font-size:2rem;font-weight:900;color:#ffd700;display:block;}
+.stat-lbl{font-size:.72rem;color:rgba(255,255,255,.6);}
+
+/* Countdown */
+.cd-box{background:rgba(255,255,255,.08);border:1px solid rgba(255,215,0,.25);border-radius:10px;padding:.65rem .9rem;min-width:62px;text-align:center;backdrop-filter:blur(6px);transition:transform .2s,border-color .2s;}
+.cd-box:hover{transform:translateY(-3px);border-color:rgba(255,215,0,.5);}
+.cd-num{font-size:1.85rem;font-weight:900;color:#ffd700;line-height:1;}
+.cd-lbl{font-size:.58rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;}
+
+/* Buttons */
+.btn-yellow{background:#ffd700;color:#0d1257;border:none;font-weight:700;border-radius:10px;font-size:.95rem;padding:.75rem 1.8rem;box-shadow:0 4px 18px rgba(255,215,0,.4);transition:transform .2s,box-shadow .2s;}
+.btn-yellow:hover{background:#ffca00;color:#0d1257;transform:translateY(-2px);box-shadow:0 8px 26px rgba(255,215,0,.5);}
+.btn-outline-w{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.55);font-weight:600;border-radius:10px;font-size:.95rem;padding:.75rem 1.8rem;transition:background .2s,border-color .2s,transform .2s;}
+.btn-outline-w:hover{background:rgba(255,255,255,.1);color:#fff;border-color:#fff;transform:translateY(-2px);}
+.btn-navy{background:#1a237e;color:#fff;border:none;font-weight:700;border-radius:8px;transition:background .2s,transform .2s;}
+.btn-navy:hover{background:#0d1257;color:#fff;transform:translateY(-1px);}
+
+/* ══ INFO BAND ══ */
+.info-band{background:#fffde7;border-top:4px solid #ffd700;padding:.85rem 0;}
+
+/* ══ SCROLL REVEAL ══ */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1);}
+.reveal.in{opacity:1;transform:translateY(0);}
+.rd1{transition-delay:.1s}.rd2{transition-delay:.2s}.rd3{transition-delay:.3s}.rd4{transition-delay:.4s}
+
+/* ══ STEP CARDS ══ */
+.step-card{background:#fff;border:none;border-top:4px solid #1a237e;border-radius:14px;box-shadow:0 2px 16px rgba(26,35,126,.08);padding:2rem 1.5rem;text-align:center;transition:transform .3s,box-shadow .3s;}
+.step-card:hover{transform:translateY(-8px);box-shadow:0 14px 36px rgba(26,35,126,.14);}
+.step-num{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#1a237e,#283593);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;margin:0 auto .9rem;box-shadow:0 4px 14px rgba(26,35,126,.3);}
+.step-icon{font-size:2.3rem;color:#1a237e;margin-bottom:.9rem;transition:transform .3s;}
+.step-card:hover .step-icon{transform:scale(1.15) rotate(-4deg);}
+
+/* ══ EXAM CARDS ══ */
+.exam-card{background:#fff;border-radius:14px;padding:1.6rem 1.5rem;text-align:center;border:1px solid #e8eaf6;box-shadow:0 2px 10px rgba(0,0,0,.05);transition:transform .3s,box-shadow .3s;}
+.exam-card:hover{transform:translateY(-5px);box-shadow:0 10px 28px rgba(26,35,126,.11);}
+.exam-card-icon{font-size:2.1rem;color:#1a237e;margin-bottom:.5rem;transition:transform .3s;}
+.exam-card:hover .exam-card-icon{transform:scale(1.18);}
+.exam-card-label{font-size:.78rem;color:#9e9e9e;margin-bottom:.25rem;}
+.exam-card-val{font-weight:700;color:#1a237e;font-size:.93rem;}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="hero-strip">
-  <h1><i class="bi bi-award-fill me-2"></i>CSC Scholarship Aptitude Test 2026</h1>
-  <p>33rd Edition &nbsp;·&nbsp; Win up to <strong>75% Scholarship</strong> &nbsp;·&nbsp; Computer Software College</p>
-</div>
 
-<div class="container py-5">
-  <div class="row g-4 justify-content-center">
+<!-- ████ HERO ████ -->
+<section class="hero" id="hero-sec">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div id="particles-wrap"></div>
 
-    <div class="col-md-5">
-      <div class="card h-100 text-center p-4">
-        <div class="mb-3" style="font-size:3rem; color:#e60000;"><i class="bi bi-pencil-square"></i></div>
-        <h4 class="fw-bold">Register Now</h4>
-        <p class="text-muted">Fill in your personal and exam details to register for SAT 2026. Registration is free.</p>
-        <a href="{{ url_for('register') }}" class="btn btn-csc mt-auto px-4">
-          <i class="bi bi-arrow-right-circle me-1"></i>Register
-        </a>
+  <div class="container position-relative" style="z-index:2;">
+    <div class="row align-items-center g-5">
+
+      <!-- LEFT -->
+      <div class="col-lg-7">
+        <!-- CSC Logo -->
+        <div class="a-logo mb-2">
+          <img src="/static/images/csc_logo_new.png" alt="CSC Logo" class="hero-logo-img">
+        </div>
+
+        <div class="hero-badge a-tag">
+          <i class="fas fa-trophy"></i>
+          SAT 2026 — 33rd Scholarship Aptitude Test
+        </div>
+
+        <h1 class="display-4 fw-bold mb-3 a-h1" style="line-height:1.15;">
+          Win Up to <span style="color:#ffd700;">75% Scholarship</span><br>
+          on Computer Courses
+        </h1>
+
+        <p class="lead a-p mb-4" style="opacity:.85;max-width:540px;">
+          Join thousands of students who have kickstarted their IT careers through
+          CSC's Scholarship Aptitude Test. Quality Education at Affordable Cost.
+        </p>
+
+        <div class="d-flex flex-wrap gap-3 mb-5 a-btn">
+          <a href="/register" class="btn btn-yellow btn-lg">
+            <i class="fas fa-user-plus me-2"></i>Register Now
+          </a>
+          <a href="/check" class="btn btn-outline-w btn-lg">
+            <i class="fas fa-id-card me-2"></i>Get Admit Card
+          </a>
+        </div>
+
+        <!-- Countdown -->
+        <div class="d-flex gap-3 align-items-center flex-wrap a-cd">
+          <div class="cd-box"><div class="cd-num" id="cdd">00</div><div class="cd-lbl">Days</div></div>
+          <div class="cd-box"><div class="cd-num" id="cdh">00</div><div class="cd-lbl">Hours</div></div>
+          <div class="cd-box"><div class="cd-num" id="cdm">00</div><div class="cd-lbl">Mins</div></div>
+          <div class="cd-box"><div class="cd-num" id="cds">00</div><div class="cd-lbl">Secs</div></div>
+          <div class="ps-1">
+            <div style="font-size:.78rem;color:rgba(255,255,255,.5);">until first exam</div>
+            <div style="font-size:.88rem;font-weight:700;color:#ffd700;">29 March 2026</div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="col-md-5">
-      <div class="card h-100 text-center p-4">
-        <div class="mb-3" style="font-size:3rem; color:#0a0a6e;"><i class="bi bi-card-text"></i></div>
-        <h4 class="fw-bold">Download Admit Card</h4>
-        <p class="text-muted">Already registered? Enter your mobile number to view and download your admit card PDF.</p>
-        <a href="{{ url_for('check_admit') }}" class="btn btn-navy mt-auto px-4">
-          <i class="bi bi-download me-1"></i>Get Admit Card
-        </a>
+      <!-- RIGHT -->
+      <div class="col-lg-5 text-center">
+        <div class="ring mb-4 a-ring">
+          <span class="num">75%</span>
+          <span class="lbl">Scholarship</span>
+        </div>
+        <div class="row g-3 justify-content-center a-st">
+          <div class="col-4 text-center">
+            <span class="stat-num">40+</span>
+            <div class="stat-lbl">Years</div>
+          </div>
+          <div class="col-4 text-center">
+            <span class="stat-num">33rd</span>
+            <div class="stat-lbl">Edition</div>
+          </div>
+          <div class="col-4 text-center">
+            <span class="stat-num">ISO</span>
+            <div class="stat-lbl">Certified</div>
+          </div>
+        </div>
       </div>
-    </div>
 
+    </div>
   </div>
+</section>
 
-  <!-- Info boxes -->
-  <div class="row g-3 mt-4">
-    <div class="col-md-4">
-      <div class="card p-3 text-center border-start border-4" style="border-color:#e60000 !important;">
-        <div class="fw-bold text-danger fs-5"><i class="bi bi-geo-alt-fill me-1"></i>Exam Centres</div>
-        <p class="mb-0 mt-1 text-muted">Pammal &nbsp;·&nbsp; Pallavaram &nbsp;·&nbsp; Chrompet</p>
+<!-- ████ INFO BAND ████ -->
+<section class="info-band">
+  <div class="container">
+    <div class="row align-items-center text-center text-md-start g-2">
+      <div class="col-md-auto">
+        <i class="fas fa-calendar-check" style="color:#c9a800;font-size:1.1rem;"></i>
       </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card p-3 text-center border-start border-4" style="border-color:#0a0a6e !important;">
-        <div class="fw-bold fs-5" style="color:#0a0a6e;"><i class="bi bi-calendar-event me-1"></i>Exam Dates</div>
-        <p class="mb-0 mt-1 text-muted">29 March 2026 (Sunday)<br>04 April 2026 (Saturday)</p>
+      <div class="col fw-semibold" style="font-size:.9rem;color:#1a237e;">
+        <strong>Exam Dates: 29 March 2026 (Sunday) &amp; 04 April 2026 (Saturday)</strong>
+        &nbsp;|&nbsp; Slots every 30 min: 7:00 AM – 1:00 PM
+        &nbsp;|&nbsp; Centres: Pammal, Pallavaram, Chrompet
       </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card p-3 text-center border-start border-4" style="border-color:#fdd835 !important;">
-        <div class="fw-bold text-warning fs-5"><i class="bi bi-trophy-fill me-1"></i>Scholarship</div>
-        <p class="mb-0 mt-1 text-muted">Win up to <strong>75%</strong> fee waiver at CSC</p>
+      <div class="col-md-auto">
+        <a href="/register" class="btn btn-navy btn-sm px-3 fw-bold">Register Free</a>
       </div>
     </div>
   </div>
-</div>
+</section>
+
+<!-- ████ HOW IT WORKS ████ -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="text-center mb-5 reveal">
+      <h2 class="fw-bold" style="color:#1a237e;">How It Works</h2>
+      <p class="text-muted">Simple steps to win your scholarship</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% for icon, title, desc in [
+        ('fa-user-plus',      'Register Online',   'Fill the form with your name, mobile and preferred centre. Free to register.'),
+        ('fa-id-card',        'Get Admit Card',    'Enter your mobile number to view and download your personalised Hall Ticket.'),
+        ('fa-pen-to-square',  'Write the Exam',    'Visit your exam centre on the chosen date and attempt the SAT.'),
+        ('fa-graduation-cap', 'Win Scholarship',   'Score well and win up to 75% scholarship on CSC computer courses.'),
+      ] %}
+      <div class="col-sm-6 col-lg-3 reveal rd{{ loop.index }}">
+        <div class="step-card h-100">
+          <div class="step-num">{{ loop.index }}</div>
+          <div class="step-icon"><i class="fas {{ icon }}"></i></div>
+          <h5 class="fw-bold mb-2">{{ title }}</h5>
+          <p class="text-muted small mb-0">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ████ EXAM DETAILS ████ -->
+<section class="py-5" style="background:#f0f2f8;">
+  <div class="container">
+    <div class="text-center mb-5 reveal">
+      <h2 class="fw-bold" style="color:#1a237e;">Exam Details</h2>
+      <p class="text-muted">Everything you need to know</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% for icon, label, val in [
+        ('fa-calendar-alt',   'Exam Dates',  '29 Mar 2026 &amp; 04 Apr 2026'),
+        ('fa-clock',          'Time Slots',  '7:00 AM – 1:00 PM (every 30 min)'),
+        ('fa-map-marker-alt', 'Centres',     'Pammal &nbsp;·&nbsp; Pallavaram &nbsp;·&nbsp; Chrompet'),
+        ('fa-file-alt',       'Syllabus',    'Aptitude, Reasoning, Basic Computer'),
+      ] %}
+      <div class="col-sm-6 col-lg-3 reveal rd{{ loop.index }}">
+        <div class="exam-card h-100">
+          <div class="exam-card-icon"><i class="fas {{ icon }}"></i></div>
+          <div class="exam-card-label">{{ label }}</div>
+          <div class="exam-card-val">{{ val }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-5 reveal d-flex justify-content-center gap-3 flex-wrap">
+      <a href="/register" class="btn btn-navy btn-lg px-5 fw-bold">
+        <i class="fas fa-user-plus me-2"></i>Register Now
+      </a>
+      <a href="/check" class="btn btn-yellow btn-lg px-5">
+        <i class="fas fa-download me-2"></i>Download Admit Card
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const wrap=document.getElementById('particles-wrap');
+  if(!wrap)return;
+  wrap.style.cssText='position:absolute;inset:0;overflow:hidden;pointer-events:none;';
+  for(let i=0;i<28;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const s=2+Math.random()*4;
+    p.style.cssText=`left:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${7+Math.random()*12}s;animation-delay:-${Math.random()*16}s;opacity:${.25+Math.random()*.5};`;
+    wrap.appendChild(p);
+  }
+})();
+
+(function(){
+  const t=new Date('2026-03-29T07:00:00').getTime();
+  const p=n=>String(Math.floor(n)).padStart(2,'0');
+  function tick(){
+    const d=Math.max(0,t-Date.now());
+    document.getElementById('cdd').textContent=p(d/86400000);
+    document.getElementById('cdh').textContent=p((d%86400000)/3600000);
+    document.getElementById('cdm').textContent=p((d%3600000)/60000);
+    document.getElementById('cds').textContent=p((d%60000)/1000);
+  }
+  tick();setInterval(tick,1000);
+})();
+
+(function(){
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');obs.unobserve(e.target);}});
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+})();
+</script>
 {% endblock %}

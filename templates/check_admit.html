@@ -1,99 +1,187 @@
-{% extends 'base.html' %}
-{% block title %}Download Admit Card — CSC SAT 2026{% endblock %}
+{% extends "base.html" %}
+{% block title %}Get Admit Card — CSC SAT 2026{% endblock %}
+{% block extra_head %}
+<style>
+.wrap{background:#f0f2f8;min-height:calc(100vh - 62px);padding:2.5rem 1rem;}
+
+/* Search card */
+.search-card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);overflow:hidden;max-width:520px;margin:0 auto 1.5rem;}
+.card-hdr{background:linear-gradient(135deg,#0d1257,#1a237e);color:#fff;padding:1.75rem 2rem;text-align:center;}
+.card-hdr .cb{background:#ffd700;color:#0d1257;font-weight:900;padding:3px 12px;border-radius:5px;font-size:.88rem;display:inline-block;margin-bottom:.6rem;}
+.card-body-p{padding:1.75rem;}
+.igt2{background:#e8eaf6;border:1.5px solid #e0e0e0;border-right:none;color:#1a237e;border-radius:8px 0 0 8px;}
+.form-control-mob{border:1.5px solid #e0e0e0;border-left:none;border-radius:0 8px 8px 0;font-size:1rem;padding:.65rem 1rem;transition:border-color .2s;outline:none;}
+.form-control-mob:focus{border-color:#1a237e;}
+.input-group:focus-within .igt2{border-color:#1a237e;}
+.btn-find{background:#1a237e;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:1rem;padding:.7rem;width:100%;transition:.2s;}
+.btn-find:hover{background:#0d1257;color:#fff;}
+
+/* Admit card */
+.admit-card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);overflow:hidden;max-width:520px;margin:0 auto 1rem;}
+.admit-hdr{background:linear-gradient(135deg,#0d1257,#1a237e);color:#fff;padding:1rem 1.25rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;}
+.admit-csc{background:#ffd700;color:#0d1257;font-weight:900;padding:3px 10px;border-radius:5px;font-size:.83rem;white-space:nowrap;}
+.ht-pill{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-weight:800;font-size:.93rem;padding:.28rem .9rem;border-radius:20px;white-space:nowrap;margin-left:auto;}
+.admit-body{padding:1.5rem;}
+
+/* Calendar widget */
+.cal-widget{background:#1a237e;border-radius:10px;width:78px;flex-shrink:0;overflow:hidden;text-align:center;}
+.cal-top{background:#e53935;padding:.3rem .5rem;font-size:.62rem;font-weight:700;color:#fff;text-transform:uppercase;}
+.cal-month{font-size:.78rem;font-weight:700;color:#ffd700;padding:.3rem 0 0;}
+.cal-day{font-size:2.2rem;font-weight:900;color:#fff;line-height:1;padding:.1rem 0;}
+.cal-wday{background:#e53935;font-size:.6rem;font-weight:700;color:#fff;padding:.25rem;margin:.25rem .4rem;border-radius:3px;}
+
+/* Detail rows */
+.det-row{display:flex;align-items:center;padding:.6rem 0;border-bottom:1px solid #f5f5f5;}
+.det-row:last-child{border-bottom:none;}
+.det-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9e9e9e;width:88px;flex-shrink:0;}
+.det-val{font-weight:600;color:#1a237e;font-size:.93rem;}
+
+/* Signature area */
+.sig-wrap{border-top:1.5px dashed #e0e0e0;margin-top:.8rem;padding-top:.8rem;display:flex;align-items:flex-end;justify-content:flex-end;}
+.sig-block{text-align:center;}
+.sig-img{height:38px;object-fit:contain;display:block;margin:0 auto .2rem;}
+.sig-name{font-size:.65rem;color:#9e9e9e;text-transform:uppercase;letter-spacing:.06em;}
+.sig-title{font-size:.65rem;color:#1a237e;font-weight:700;}
+
+.btn-dl{background:#1a237e;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:1rem;padding:.85rem;width:100%;transition:.2s;}
+.btn-dl:hover{background:#0d1257;color:#fff;}
+
+/* Multi-result */
+.multi-item{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-left:4px solid #1a237e;max-width:520px;margin:0 auto .75rem;}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="hero-strip">
-  <h1><i class="bi bi-card-text me-2"></i>Download Admit Card</h1>
-  <p>Enter your registered mobile number to retrieve your admit card.</p>
-</div>
+<div class="wrap">
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-5">
-
-      <div class="card mb-4">
-        <div class="card-header text-white py-3" style="background:#0a0a6e;">
-          <i class="bi bi-search me-2"></i>Find Your Admit Card
-        </div>
-        <div class="card-body p-4">
-          <form method="POST" action="{{ url_for('check_admit') }}">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Registered Mobile Number</label>
-              <input type="tel" name="mobile" class="form-control form-control-lg"
-                     placeholder="Enter 10-digit mobile number" maxlength="10" required>
-            </div>
-            {% if error %}
-              <div class="alert alert-danger py-2">{{ error }}</div>
-            {% endif %}
-            <div class="d-grid">
-              <button type="submit" class="btn btn-csc btn-lg">
-                <i class="bi bi-search me-2"></i>Search
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Single result -->
-      {% if student %}
-      <div class="card border-success">
-        <div class="card-header bg-success text-white py-3">
-          <i class="bi bi-person-check-fill me-2"></i>Registration Found
-        </div>
-        <div class="card-body p-4">
-          <table class="table table-borderless mb-3">
-            <tr><th class="text-muted" width="40%">Hall Ticket</th>
-                <td class="fw-bold fs-5 text-danger">{{ student.admit_card_no }}</td></tr>
-            <tr><th class="text-muted">Name</th>
-                <td class="fw-semibold">{{ student.name }}</td></tr>
-            <tr><th class="text-muted">Gender</th>
-                <td>{{ student.gender }}</td></tr>
-            <tr><th class="text-muted">Centre</th>
-                <td>{{ student.exam_centre }}</td></tr>
-            <tr><th class="text-muted">Exam Date</th>
-                <td>{{ student.exam_date }}</td></tr>
-            <tr><th class="text-muted">Time</th>
-                <td>{{ student.exam_time }}</td></tr>
-          </table>
-          <div class="d-grid">
-            <a href="{{ url_for('download_admit', reg_id=student.id) }}"
-               class="btn btn-csc btn-lg">
-              <i class="bi bi-download me-2"></i>Download Admit Card PDF
-            </a>
-          </div>
-        </div>
+  <!-- Search box -->
+  <div class="search-card">
+    <div class="card-hdr">
+      <div class="cb">CSC</div>
+      <h3 class="fw-bold mb-1">Get Your Admit Card</h3>
+      <p class="mb-0 small" style="opacity:.75;">Enter your registered mobile number</p>
+    </div>
+    <div class="card-body-p">
+      {% if error %}
+      <div class="alert alert-danger py-2 small mb-3">
+        <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
       </div>
       {% endif %}
-
-      <!-- Multiple results -->
-      {% if students|length > 1 %}
-      <div class="card">
-        <div class="card-header text-white py-3" style="background:#0a0a6e;">
-          <i class="bi bi-people-fill me-2"></i>{{ students|length }} Registrations Found
+      <form method="POST" action="/check" id="cForm">
+        <div class="input-group mb-3">
+          <span class="input-group-text igt2"><i class="fas fa-mobile-alt"></i></span>
+          <input type="tel" class="form-control form-control-mob" name="mobile"
+                 placeholder="Enter 10-digit mobile number"
+                 value="{{ request.form.get('mobile','') }}"
+                 maxlength="10" required autofocus>
         </div>
-        <div class="card-body p-0">
-          <div class="list-group list-group-flush">
-            {% for st in students %}
-            <div class="list-group-item p-3">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-bold text-danger">{{ st.admit_card_no }}</div>
-                  <div class="fw-semibold">{{ st.name }}</div>
-                  <small class="text-muted">{{ st.exam_centre }} &nbsp;·&nbsp; {{ st.exam_date }} &nbsp;·&nbsp; {{ st.exam_time }}</small>
-                </div>
-                <a href="{{ url_for('download_admit', reg_id=st.id) }}"
-                   class="btn btn-sm btn-csc">
-                  <i class="bi bi-download"></i> PDF
-                </a>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-      {% endif %}
-
+        <button type="submit" class="btn-find">
+          <i class="fas fa-search me-2"></i>Find My Admit Card
+        </button>
+      </form>
     </div>
   </div>
+
+  <!-- Multiple results -->
+  {% if students and students|length > 1 %}
+  <div style="max-width:520px;margin:0 auto 1rem;">
+    <div class="alert alert-info py-2 small mb-3">
+      <i class="fas fa-info-circle me-1"></i>
+      <strong>{{ students|length }} registrations</strong> found.
+    </div>
+    {% for s in students %}
+    <div class="multi-item">
+      <div class="p-3 d-flex align-items-center gap-3">
+        <div>
+          <div class="fw-bold" style="color:#1a237e;">{{ s.admit_card_no }}</div>
+          <div class="text-muted small">{{ s.name }} | {{ s.exam_centre }}</div>
+          <div class="text-muted small">{{ s.exam_date }} | {{ s.exam_time }}</div>
+        </div>
+        <div class="ms-auto">
+          <a href="/download_admit/{{ s.id }}" class="btn btn-sm px-3 fw-bold"
+             style="background:#1a237e;color:#fff;border-radius:8px;">
+            <i class="fas fa-download me-1"></i>PDF
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+  <!-- Single result -->
+  {% elif student %}
+  <div class="admit-card">
+    <div class="admit-hdr">
+      <span class="admit-csc">CSC</span>
+      <div>
+        <div class="fw-bold" style="font-size:.93rem;">ADMIT CARD — SAT 2026</div>
+        <div style="font-size:.72rem;opacity:.7;">33rd Scholarship Aptitude Test</div>
+      </div>
+      <span class="ht-pill">{{ student.admit_card_no }}</span>
+    </div>
+    <div class="admit-body">
+
+      <!-- Exam info row -->
+      <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded"
+           style="background:#f5f7ff;border:1px solid #e8eaf6;">
+        <div class="cal-widget">
+          <div class="cal-top">Exam Date</div>
+          {% if 'March' in student.exam_date %}
+          <div class="cal-month">MARCH</div>
+          <div class="cal-day">29</div>
+          <div class="cal-wday">SUNDAY</div>
+          {% else %}
+          <div class="cal-month">APRIL</div>
+          <div class="cal-day">4</div>
+          <div class="cal-wday">SATURDAY</div>
+          {% endif %}
+        </div>
+        <div>
+          <div class="fw-bold" style="color:#1a237e;font-size:1.1rem;">{{ student.exam_time }}</div>
+          <div class="text-muted">{{ student.exam_centre }}</div>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="mb-3">
+        {% for label, key in [('Name','name'),('Gender','gender'),('Mobile','mobile')] %}
+        <div class="det-row">
+          <span class="det-lbl">{{ label }}</span>
+          <span class="det-val">{{ student[key] or '—' }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Signature -->
+      <div class="sig-wrap mb-3">
+        <div class="sig-block">
+          <img src="/static/images/signature.png" alt="Authorised Signature" class="sig-img">
+          <div class="sig-name">Authorised Signatory</div>
+          <div class="sig-title">Computer Software College</div>
+        </div>
+      </div>
+
+      <a href="/download_admit/{{ student.id }}" class="btn-dl d-block text-center text-decoration-none">
+        <i class="fas fa-download me-2"></i>Download Admit Card (PDF)
+      </a>
+      <p class="text-muted small text-center mt-2 mb-0">
+        <i class="fas fa-info-circle me-1"></i>Bring this card + valid photo ID to the exam.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="text-center text-muted small mt-2">
+    Not yet registered?
+    <a href="/register" style="color:#1a237e;font-weight:600;">Register here</a>
+  </p>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('cForm').addEventListener('submit',function(e){
+  const m=document.querySelector('[name=mobile]').value.trim();
+  if(!/^\d{10}$/.test(m)){e.preventDefault();alert('Enter valid 10-digit mobile number.');}
+});
+</script>
 {% endblock %}

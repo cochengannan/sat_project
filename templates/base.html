@@ -5,89 +5,113 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}CSC SAT 2026{% endblock %}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     :root {
-      --csc-red:  #e60000;
-      --csc-navy: #0a0a6e;
+      --navy:      #1a237e;
+      --navy-dark: #0d1257;
+      --yellow:    #ffd700;
+      --red:       #e53935;
     }
-    body { background: #f4f6fb; font-family: 'Segoe UI', sans-serif; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f8; margin: 0; }
 
     /* ── Navbar ── */
-    .navbar { background: var(--csc-navy) !important; }
-    .navbar-brand { font-weight: 800; font-size: 1.3rem; color: #fff !important; letter-spacing: 1px; }
-    .navbar-brand span { color: #fdd835; }
-    .nav-link { color: rgba(255,255,255,.85) !important; font-weight: 500; }
-    .nav-link:hover { color: #fdd835 !important; }
-
-    /* ── Hero strip ── */
-    .hero-strip {
-      background: linear-gradient(135deg, var(--csc-red) 0%, #b71c1c 100%);
-      color: #fff; padding: 2.5rem 1rem; text-align: center;
-      border-bottom: 5px solid var(--csc-navy);
+    .navbar {
+      background: var(--navy-dark) !important;
+      padding: .55rem 1.5rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.35);
     }
-    .hero-strip h1 { font-size: 2rem; font-weight: 800; margin: 0; }
-    .hero-strip p  { margin: .4rem 0 0; opacity: .9; }
+    .navbar-brand {
+      display: flex; align-items: center; gap: 6px;
+      text-decoration: none;
+    }
+    .brand-csc  { color: var(--yellow); font-weight: 900; font-size: 1.15rem; letter-spacing:.02em; }
+    .brand-sat  { color: #fff; font-weight: 700; font-size: .95rem; letter-spacing:.04em; }
+    .nav-link {
+      color: rgba(255,255,255,.85) !important; font-weight: 500; font-size: .92rem;
+      padding: .45rem .9rem !important; border-radius: 6px; transition: color .2s, background .2s;
+    }
+    .nav-link i { margin-right: 5px; font-size: .85rem; }
+    .nav-link:hover, .nav-link.active-link { color: #fff !important; background: rgba(255,255,255,.1); }
 
-    /* ── Cards ── */
-    .card { border: none; border-radius: 14px; box-shadow: 0 2px 18px rgba(0,0,0,.08); }
-    .card-header { border-radius: 14px 14px 0 0 !important; font-weight: 700; }
-
-    /* ── Buttons ── */
-    .btn-csc { background: var(--csc-red); color: #fff; border: none; font-weight: 600; }
-    .btn-csc:hover { background: #b71c1c; color: #fff; }
-    .btn-navy { background: var(--csc-navy); color: #fff; border: none; font-weight: 600; }
-    .btn-navy:hover { background: #07075c; color: #fff; }
+    /* ── Flash ── */
+    .flash-wrap {
+      position: fixed; top: 62px; right: 14px;
+      z-index: 9999; min-width: 300px; max-width: 420px;
+    }
+    .flash-wrap .alert { border: none; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.15); font-size: .88rem; }
 
     /* ── Footer ── */
-    footer { background: var(--csc-navy); color: rgba(255,255,255,.7); padding: 1.2rem; text-align: center; font-size: .85rem; margin-top: 3rem; }
-    footer a { color: #fdd835; text-decoration: none; }
+    footer {
+      background: var(--navy-dark); color: rgba(255,255,255,.6);
+      padding: 1.4rem 0; margin-top: 3rem; font-size: .83rem; text-align: center;
+    }
+    footer strong { color: var(--yellow); }
+    footer a { color: var(--yellow); text-decoration: none; }
+    footer a:hover { color: #fff; }
   </style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  {% block extra_css %}{% endblock %}
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg">
-  <div class="container">
-    <a class="navbar-brand" href="{{ url_for('index') }}">
-      <i class="bi bi-mortarboard-fill me-1"></i>CSC <span>SAT 2026</span>
+  <div class="container-fluid px-4">
+    <a class="navbar-brand" href="/">
+      <span class="brand-csc">CSC</span>
+      <span class="brand-sat">SAT 2026</span>
     </a>
-    <button class="navbar-toggler border-light" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nb">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navMenu">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}"><i class="bi bi-house me-1"></i>Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}"><i class="bi bi-pencil-square me-1"></i>Register</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('check_admit') }}"><i class="bi bi-card-text me-1"></i>Admit Card</a></li>
+    <div class="collapse navbar-collapse" id="nb">
+      <ul class="navbar-nav ms-auto gap-1">
+        <li class="nav-item">
+          <a class="nav-link {% if request.path=='/' %}active-link{% endif %}" href="/">
+            <i class="fas fa-home"></i>Home
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if '/register' in request.path %}active-link{% endif %}" href="/register">
+            <i class="fas fa-user-edit"></i>Register
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if '/check' in request.path %}active-link{% endif %}" href="/check">
+            <i class="fas fa-id-card"></i>Admit Card
+          </a>
+        </li>
       </ul>
     </div>
   </div>
 </nav>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="container mt-3">
-      {% for cat, msg in messages %}
-        <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
-          {{ msg|safe }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      {% endfor %}
+<div class="flash-wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible fade show">
+      {{ msg|safe }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-  {% endif %}
-{% endwith %}
+    {% endfor %}
+  {% endwith %}
+</div>
 
 {% block content %}{% endblock %}
 
 <footer>
-  &copy; 2026 <strong>Computer Software College</strong> &mdash; An ISO 9001:2015 Certified Institution &nbsp;|&nbsp;
-  <a href="{{ url_for('admin_login') }}">Admin</a>
+  <div class="container">
+    <p class="mb-1">
+      <strong>Computer Software College</strong> — ISO 9001:2015 Certified Institution
+    </p>
+    <p class="mb-0">
+      Pioneering 40 Years of Value Oriented Computer Education &nbsp;|&nbsp;
+      <a href="/admin/login">Admin Portal</a>
+    </p>
+  </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

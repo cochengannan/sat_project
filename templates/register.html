@@ -1,109 +1,127 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block title %}Register — CSC SAT 2026{% endblock %}
+{% block extra_head %}
+<style>
+.reg-wrap{background:#f0f2f8;min-height:calc(100vh - 62px);padding:2.5rem 1rem;}
+.reg-card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);overflow:hidden;max-width:640px;margin:0 auto;}
+.reg-header{background:linear-gradient(135deg,#0d1257,#1a237e);color:#fff;padding:2rem;text-align:center;}
+.reg-header .csc-badge{background:#ffd700;color:#0d1257;font-weight:900;padding:4px 12px;border-radius:6px;font-size:.9rem;display:inline-block;margin-bottom:.7rem;}
+.reg-body{padding:2rem;}
+.sec-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9e9e9e;border-bottom:1.5px solid #f0f0f0;padding-bottom:.4rem;margin-bottom:1rem;}
+.form-control,.form-select{border:1.5px solid #e0e0e0;border-radius:8px;font-size:.95rem;padding:.65rem 1rem;transition:border-color .2s,box-shadow .2s;}
+.form-control:focus,.form-select:focus{border-color:#1a237e;box-shadow:0 0 0 3px rgba(26,35,126,.1);outline:none;}
+.igt{background:#e8eaf6;border:1.5px solid #e0e0e0;border-right:none;color:#1a237e;border-radius:8px 0 0 8px;}
+.ig-ctrl{border-left:none!important;border-radius:0 8px 8px 0!important;}
+.input-group:focus-within .igt{border-color:#1a237e;}
+.req{color:#e53935;}
+.form-check-input:checked{background-color:#1a237e;border-color:#1a237e;}
+.btn-sub{background:#1a237e;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:1rem;padding:.85rem;width:100%;transition:.2s;}
+.btn-sub:hover{background:#0d1257;color:#fff;}
+.info-note{background:#fffde7;border-left:4px solid #ffd700;border-radius:0 8px 8px 0;padding:.75rem 1rem;font-size:.88rem;color:#1a237e;}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="hero-strip">
-  <h1><i class="bi bi-pencil-square me-2"></i>Student Registration</h1>
-  <p>Fill in all details carefully. You cannot edit after submission.</p>
-</div>
+<div class="reg-wrap">
+  <div class="reg-card">
+    <div class="reg-header">
+      <div class="csc-badge">CSC</div>
+      <h2 class="fw-bold mb-1">SAT 2026 Registration</h2>
+      <p class="mb-0 small" style="opacity:.8;">33rd Scholarship Aptitude Test &nbsp;•&nbsp; Win up to 75% Scholarship</p>
+    </div>
+    <div class="reg-body">
+      <form method="POST" action="/register" id="rForm" novalidate>
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-7">
-      <div class="card">
-        <div class="card-header text-white py-3" style="background:#0a0a6e;">
-          <i class="bi bi-person-fill me-2"></i>SAT 2026 — Registration Form
+        <div class="sec-label"><i class="fas fa-user me-1"></i>Personal Details</div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Full Name <span class="req">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text igt"><i class="fas fa-user"></i></span>
+            <input type="text" class="form-control ig-ctrl" name="name"
+                   value="{{ form.get('name','') }}" placeholder="Enter your full name" required>
+          </div>
         </div>
-        <div class="card-body p-4">
 
-          <form method="POST" action="{{ url_for('register') }}" novalidate>
-
-            <!-- Name -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-              <input type="text" name="name" class="form-control"
-                     placeholder="Enter your full name"
-                     value="{{ form.get('name','') }}" required>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Gender <span class="req">*</span></label>
+          <div class="d-flex gap-4 mt-1">
+            {% for g in ['Male','Female'] %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="gender" value="{{ g }}" id="g{{ g }}"
+                     {{ 'checked' if form.get('gender')==g }}>
+              <label class="form-check-label fw-semibold" for="g{{ g }}">{{ g }}</label>
             </div>
-
-            <!-- Gender -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Gender <span class="text-danger">*</span></label>
-              <div class="d-flex gap-4">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="gender" value="Male" id="gMale"
-                    {{ 'checked' if form.get('gender')=='Male' else '' }}>
-                  <label class="form-check-label" for="gMale">Male</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="gender" value="Female" id="gFemale"
-                    {{ 'checked' if form.get('gender')=='Female' else '' }}>
-                  <label class="form-check-label" for="gFemale">Female</label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Mobile -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Mobile Number <span class="text-danger">*</span></label>
-              <input type="tel" name="mobile" class="form-control"
-                     placeholder="10-digit mobile number" maxlength="10"
-                     value="{{ form.get('mobile','') }}" required>
-              <div class="form-text">This will be used to retrieve your admit card.</div>
-            </div>
-
-            <!-- Exam Centre -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Exam Centre <span class="text-danger">*</span></label>
-              <select name="exam_centre" class="form-select" required>
-                <option value="">— Select Centre —</option>
-                {% for cname in centres %}
-                  <option value="{{ cname }}"
-                    {{ 'selected' if form.get('exam_centre')==cname else '' }}>
-                    {{ cname }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <!-- Exam Date -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Exam Date <span class="text-danger">*</span></label>
-              <select name="exam_date" class="form-select" required>
-                <option value="">— Select Date —</option>
-                {% for d in exam_dates %}
-                  <option value="{{ d }}"
-                    {{ 'selected' if form.get('exam_date')==d else '' }}>
-                    {{ d }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <!-- Exam Time -->
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Preferred Time Slot <span class="text-danger">*</span></label>
-              <select name="exam_time" class="form-select" required>
-                <option value="">— Select Time —</option>
-                {% for t in timings %}
-                  <option value="{{ t }}"
-                    {{ 'selected' if form.get('exam_time')==t else '' }}>
-                    {{ t }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="d-grid">
-              <button type="submit" class="btn btn-csc btn-lg">
-                <i class="bi bi-check-circle-fill me-2"></i>Submit Registration
-              </button>
-            </div>
-
-          </form>
+            {% endfor %}
+          </div>
         </div>
-      </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Mobile Number <span class="req">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text igt"><i class="fas fa-phone"></i></span>
+            <input type="tel" class="form-control ig-ctrl" name="mobile"
+                   value="{{ form.get('mobile','') }}" placeholder="10-digit mobile number" maxlength="10" required>
+          </div>
+          <div class="form-text">Used to retrieve your admit card.</div>
+        </div>
+
+        <div class="sec-label"><i class="fas fa-map-marker-alt me-1"></i>Exam Details</div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Preferred Location <span class="req">*</span></label>
+          <select class="form-select" name="exam_centre" required>
+            <option value="">— Select Centre —</option>
+            {% for name in centres.keys() %}
+            <option value="{{ name }}" {{ 'selected' if form.get('exam_centre')==name }}>{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Exam Date <span class="req">*</span></label>
+            <select class="form-select" name="exam_date" required>
+              <option value="">— Select Date —</option>
+              {% for d in exam_dates %}
+              <option value="{{ d }}" {{ 'selected' if form.get('exam_date')==d }}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold">Time Slot <span class="req">*</span></label>
+            <select class="form-select" name="exam_time" required>
+              <option value="">— Select Time —</option>
+              {% for t in timings %}
+              <option value="{{ t }}" {{ 'selected' if form.get('exam_time')==t }}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="info-note mb-4">
+          <i class="fas fa-info-circle me-1"></i>
+          Your <strong>Hall Ticket No</strong> is auto-generated per centre.
+          Keep your <strong>mobile number</strong> safe — it's needed to download your admit card.
+        </div>
+
+        <button type="submit" class="btn-sub" id="subBtn">
+          <i class="fas fa-paper-plane me-2"></i>Register &amp; Get Hall Ticket
+        </button>
+      </form>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('rForm').addEventListener('submit',function(e){
+  const m=document.querySelector('[name=mobile]').value.trim();
+  if(!/^\d{10}$/.test(m)){e.preventDefault();alert('Enter valid 10-digit mobile number.');return;}
+  const b=document.getElementById('subBtn');
+  b.disabled=true;
+  b.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+});
+</script>
 {% endblock %}
