@@ -205,6 +205,21 @@ def build_admit_pdf(s):
     th = bb[3] - bb[1]
     draw.text((1030, 543 - th//2), centre, fill=NAVY, font=f_val)
 
+    # ── 6. Signature — overlay for all centres ───────────────────
+    sig_path = os.path.join(BASE_DIR, 'static', 'images', 'signature.png')
+    if os.path.exists(sig_path):
+        try:
+            sig_img = Image.open(sig_path).convert('RGBA')
+            sig_w, sig_h = sig_img.size
+            target_w = 220
+            scale = target_w / sig_w
+            sig_img = sig_img.resize((target_w, int(sig_h * scale)), Image.LANCZOS)
+            sig_x = template.width - sig_img.width - 80
+            sig_y = template.height - sig_img.height - 60
+            template.paste(sig_img, (sig_x, sig_y), sig_img)
+        except Exception:
+            pass
+
     # ── Convert to PDF ───────────────────────────────────────────
     template.save(buf, format='PDF', resolution=150)
     buf.seek(0)
